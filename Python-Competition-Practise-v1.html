@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>全澳中學生Python解難大賽歷屆真題模擬測試系統</title>
+  <style>
+    /* Reset 與基本樣式 */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: #f0f2f5;
+      color: #333;
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .container {
+      max-width: 960px;
+      margin: auto;
+      padding: 1rem;
+      flex: 1;
+    }
+    header, footer {
+      background-color: #0d6efd;
+      color: #fff;
+      text-align: center;
+      padding: 1rem 0;
+    }
+    footer {
+      font-size: 0.9rem;
+    }
+    h1, h2, h4 {
+      margin-bottom: 1rem;
+    }
+    p {
+      margin-bottom: 1rem;
+    }
+    /* 按鈕樣式 */
+    .btn {
+      display: inline-block;
+      padding: 0.6rem 1.2rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+      transition: background-color 0.3s;
+    }
+    .btn-primary {
+      background-color: #0d6efd;
+      color: #fff;
+    }
+    .btn-primary:hover {
+      background-color: #0056b3;
+    }
+    .btn-secondary {
+      background-color: #6c757d;
+      color: #fff;
+    }
+    .btn-secondary:hover {
+      background-color: #545b62;
+    }
+    .btn-success {
+      background-color: #198754;
+      color: #fff;
+    }
+    .btn-success:hover {
+      background-color: #146c43;
+    }
+    /* 表單控制 */
+    select, textarea {
+      width: 100%;
+      padding: 0.6rem;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    /* 題目卡片 */
+    .question-card {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .question-card p {
+      margin-bottom: 0.8rem;
+    }
+    .form-check {
+      margin-bottom: 0.5rem;
+    }
+    .form-check-label {
+      margin-left: 0.3rem;
+    }
+    /* 分數與解析 */
+    .analysis-box {
+      background: #e9ecef;
+      border-radius: 5px;
+      padding: 0.8rem;
+      margin-top: 0.8rem;
+    }
+    .correct { color: green; }
+    .wrong { color: red; }
+    /* 隱藏區塊 */
+    .hidden { display: none; }
+    /* 響應式 */
+    @media (max-width: 600px) {
+      h1 { font-size: 1.6rem; }
+      h2 { font-size: 1.4rem; }
+      .btn {
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>全澳中學生Python解難大賽模擬測試系統2.0</h1>
+  </header>
+
+  <div class="container">
+    <!-- 區塊1：首頁/選擇考試類型 -->
+    <section id="welcomeSection">
+      <p>請選擇考試類型，然後點擊「開始作答」：</p>
+      <select id="examTypeSelect">
+        <option value="preliminary">初賽試卷</option>
+        <option value="final">決賽試卷</option>
+      </select>
+      <button id="startBtn" class="btn btn-primary">開始作答</button>
+    </section>
+
+    <!-- 區塊2：考試中（顯示題目 + 提交） -->
+    <section id="quizSection" class="hidden">
+      <h2 id="examTitle"></h2>
+      <p>已用時間：<span id="timeDisplay">0</span> 秒</p>
+      <hr>
+      <div id="questionContainer"></div>
+      <button id="submitBtn" class="btn btn-success">提交試卷</button>
+    </section>
+
+    <!-- 區塊3：結果 + 錯題分析 -->
+    <section id="resultSection" class="hidden">
+      <h2>考試結果</h2>
+      <p>總選擇題數：<span id="totalChoice">0</span></p>
+      <p>答對：<span id="correctCount">0</span></p>
+      <p>選擇題得分：<span id="scorePercent">0</span>%</p>
+      <p>作答時間：<span id="timeUsed">0</span> 秒</p>
+      <hr>
+      <h4>錯題分析（含所有題目解析）</h4>
+      <div id="analysisContainer"></div>
+      <hr>
+      <button id="backHomeBtn" class="btn btn-secondary">返回首頁</button>
+    </section>
+  </div>
+
+  <footer>
+    JacksonTai © 2025 | 題目來自澳門生產力暨科技轉移中心
+  </footer>
+
+  <!-- JavaScript 部分 -->
+  <script>
+    /**
+     * 題庫資料格式說明：
+     * 
+     * 選擇題 (type:"multiple" 或預設未設定)：
+     * {
+     *   question: "題目內容",
+     *   options: ["選項A", "選項B", "選項C", "選項D"],
+     *   answerIndex: 正確選項的索引 (0開始),
+     *   knowledge_points: "知識點",
+     *   solution_idea: "解題思路"
+     * }
+     *
+     * 非選擇題 (type:"text")：例如簡答題、程式題
+     * {
+     *   type: "text",
+     *   question: "題目內容（可含程式碼）",
+     *   answer: "參考答案或範例",
+     *   knowledge_points: "知識點",
+     *   solution_idea: "解題思路"
+     * }
+     */
+
+    // ================= 初賽題庫 =================
+    const preliminaryQuestions = [
+      {
+        question: "1. 如何取得今日的日期 YYYY-MM-DD 格式？",
+        options: ["datetime.date.today()", "datetime.datetime.today()", "datetime.now()", "date.today()"],
+        answerIndex: 0,
+        knowledge_points: "datetime.date.today() 返回格式為 YYYY-MM-DD",
+        solution_idea: "選擇最直接返回日期的方法"
+      },
+      // 可以加入其他初賽題目
+    ];
+    const preliminaryProgramResultQuestions = [
+      // 初賽程式題（若有）
+    ];
+    preliminaryQuestions.push(...preliminaryProgramResultQuestions);
+
+    // ================= 決賽題庫 =================
+    const finalQuestions = [
+      {
+        question: "1. 請描述如何在 Python 中讀取檔案內容？",
+        options: ["open()", "read()", "file()", "io()"],
+        answerIndex: 0,
+        knowledge_points: "open() 函數用於開啟檔案",
+        solution_idea: "使用 open() 並搭配 read() 方法讀取檔案內容"
+      },
+      // 可以加入其他決賽題目
+    ];
+    const finalProgrammingQuestions = [
+      // 決賽程式題（若有）
+    ];
+    finalQuestions.push(...finalProgrammingQuestions);
+
+    // ================= 全局變數與事件綁定 =================
+    let currentExamType = "preliminary";
+    let questions = [];
+    let startTime = 0;
+    let timerInterval = null;
+    let userAnswers = [];
+
+    // 取得 DOM 元素
+    const welcomeSection = document.getElementById("welcomeSection");
+    const quizSection = document.getElementById("quizSection");
+    const resultSection = document.getElementById("resultSection");
+
+    const examTypeSelect = document.getElementById("examTypeSelect");
+    const startBtn = document.getElementById("startBtn");
+    const examTitle = document.getElementById("examTitle");
+    const questionContainer = document.getElementById("questionContainer");
+    const submitBtn = document.getElementById("submitBtn");
+
+    const totalChoiceEl = document.getElementById("totalChoice");
+    const correctCountEl = document.getElementById("correctCount");
+    const scorePercentEl = document.getElementById("scorePercent");
+    const timeUsedEl = document.getElementById("timeUsed");
+    const analysisContainer = document.getElementById("analysisContainer");
+    const backHomeBtn = document.getElementById("backHomeBtn");
+    const timeDisplay = document.getElementById("timeDisplay");
+
+    // 切換考試類型
+    examTypeSelect.addEventListener("change", () => {
+      currentExamType = examTypeSelect.value;
+    });
+
+    // 開始作答
+    startBtn.addEventListener("click", () => {
+      welcomeSection.classList.add("hidden");
+      quizSection.classList.remove("hidden");
+      resultSection.classList.add("hidden");
+
+      if (currentExamType === "preliminary") {
+        examTitle.textContent = "初賽試卷";
+        questions = preliminaryQuestions;
+      } else {
+        examTitle.textContent = "決賽試卷";
+        questions = finalQuestions;
+      }
+      // 使用 Fisher-Yates 洗牌演算法打亂題目順序
+      for (let i = questions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [questions[i], questions[j]] = [questions[j], questions[i]];
+      }
+      userAnswers = Array(questions.length).fill(null);
+      renderQuestions();
+      startTime = Date.now();
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = setInterval(updateTime, 1000);
+    });
+
+    // 提交試卷
+    submitBtn.addEventListener("click", () => {
+      showResult();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    // 返回首頁
+    backHomeBtn.addEventListener("click", () => {
+      welcomeSection.classList.remove("hidden");
+      quizSection.classList.add("hidden");
+      resultSection.classList.add("hidden");
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+    });
+
+    // 渲染題目
+    function renderQuestions() {
+      questionContainer.innerHTML = "";
+      questions.forEach((q, idx) => {
+        const card = document.createElement("div");
+        card.className = "question-card";
+        const qTitle = document.createElement("p");
+        // 利用正則表達式移除題目前面的序號（如 "1. "）
+        const cleanQuestion = q.question.replace(/^\d+\.\s*/, '');
+        qTitle.innerHTML = `<strong>${cleanQuestion}</strong>`;
+        card.appendChild(qTitle);
+
+        if (!q.type || q.type === "multiple") {
+          q.options.forEach((opt, optIdx) => {
+            const optId = `question_${idx}_opt_${optIdx}`;
+            const divOption = document.createElement("div");
+            divOption.className = "form-check";
+            const inputOption = document.createElement("input");
+            inputOption.className = "form-check-input";
+            inputOption.type = "radio";
+            inputOption.name = `question_${idx}`;
+            inputOption.id = optId;
+            inputOption.value = optIdx;
+            inputOption.addEventListener("change", () => {
+              userAnswers[idx] = parseInt(optIdx);
+            });
+            const labelOption = document.createElement("label");
+            labelOption.className = "form-check-label";
+            labelOption.htmlFor = optId;
+            labelOption.textContent = opt;
+            divOption.appendChild(inputOption);
+            divOption.appendChild(labelOption);
+            card.appendChild(divOption);
+          });
+        } else if (q.type === "text") {
+          const textarea = document.createElement("textarea");
+          textarea.placeholder = "請在此輸入答案...";
+          textarea.addEventListener("input", (e) => {
+            userAnswers[idx] = e.target.value;
+          });
+          card.appendChild(textarea);
+        }
+        questionContainer.appendChild(card);
+      });
+    }
+
+    // 顯示結果與解析
+    function showResult() {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+      quizSection.classList.add("hidden");
+      resultSection.classList.remove("hidden");
+
+      const usedSeconds = Math.floor((Date.now() - startTime) / 1000);
+      timeUsedEl.textContent = usedSeconds.toString();
+
+      let correctCount = 0, totalChoice = 0;
+      questions.forEach((q, idx) => {
+        if (!q.type || q.type === "multiple") {
+          totalChoice++;
+          if (userAnswers[idx] === q.answerIndex) correctCount++;
+        }
+      });
+      totalChoiceEl.textContent = totalChoice.toString();
+      correctCountEl.textContent = correctCount.toString();
+      scorePercentEl.textContent = totalChoice ? ((correctCount / totalChoice) * 100).toFixed(2) : "N/A";
+
+      // 錯題解析
+      analysisContainer.innerHTML = "";
+      questions.forEach((q, idx) => {
+        const rowDiv = document.createElement("div");
+        rowDiv.className = "question-card";
+        const qText = document.createElement("p");
+        const cleanQuestion = q.question.replace(/^\d+\.\s*/, '');
+        qText.innerHTML = `<strong>${cleanQuestion}</strong>`;
+        rowDiv.appendChild(qText);
+
+        if (!q.type || q.type === "multiple") {
+          const userIndex = userAnswers[idx];
+          const ansText = document.createElement("p");
+          ansText.innerHTML = `<strong>你的答案：</strong>`;
+          if (userIndex === null) {
+            ansText.innerHTML += `<span class="wrong">未作答</span>`;
+          } else {
+            const userAnsOption = q.options[userIndex];
+            ansText.innerHTML += (userIndex === q.answerIndex) ?
+              `<span class="correct">${userAnsOption} (正確)</span>` :
+              `<span class="wrong">${userAnsOption} (錯誤)</span>`;
+          }
+          rowDiv.appendChild(ansText);
+
+          const correctText = document.createElement("p");
+          correctText.innerHTML = `<strong>正確答案：</strong><span>${q.options[q.answerIndex]}</span>`;
+          rowDiv.appendChild(correctText);
+        } else if (q.type === "text") {
+          const userAns = userAnswers[idx] ? userAnswers[idx] : "<span class='wrong'>未作答</span>";
+          const ansText = document.createElement("p");
+          ansText.innerHTML = `<strong>你的答案：</strong>${userAns}`;
+          rowDiv.appendChild(ansText);
+          const correctText = document.createElement("p");
+          correctText.innerHTML = `<strong>參考答案：</strong><span>${q.answer}</span>`;
+          rowDiv.appendChild(correctText);
+        }
+        const analysisBox = document.createElement("div");
+        analysisBox.className = "analysis-box";
+        analysisBox.innerHTML = `<p><strong>知識點：</strong> ${q.knowledge_points}</p>
+                                 <p><strong>解題思路：</strong> ${q.solution_idea}</p>`;
+        rowDiv.appendChild(analysisBox);
+        analysisContainer.appendChild(rowDiv);
+      });
+    }
+
+    // 更新計時
+    function updateTime() {
+      const elapsedSec = Math.floor((Date.now() - startTime) / 1000);
+      timeDisplay.textContent = elapsedSec.toString();
+    }
+  </script>
+</body>
+</html>
