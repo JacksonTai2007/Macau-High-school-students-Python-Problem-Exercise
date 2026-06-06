@@ -430,6 +430,17 @@
     }
     .empty { text-align: center; color: var(--text-muted); padding: 2rem 1rem; }
 
+    /* ---------- 資料來源 ---------- */
+    .links { list-style: none; display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.8rem; }
+    .links li { padding-left: 1.1rem; position: relative; }
+    .links li::before { content: "🔗"; position: absolute; left: 0; font-size: 0.85rem; }
+    .links a { color: var(--primary); text-decoration: none; font-weight: 600; }
+    .links a:hover { text-decoration: underline; }
+    .src-note { font-size: 0.85rem; color: var(--text-muted); margin: 0; }
+
+    /* 屆數標籤 */
+    .tag.edition { background: var(--primary-soft); color: var(--primary); border-color: var(--primary); }
+
     .hidden { display: none !important; }
 
     footer {
@@ -470,10 +481,17 @@
         </div>
 
         <div class="field">
-          <label for="examTypeSelect">試卷類型</label>
+          <label for="examTypeSelect">試卷類型（賽段）</label>
           <select id="examTypeSelect">
             <option value="preliminary">初賽試卷</option>
             <option value="final">決賽試卷</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="editionSelect">屆數</label>
+          <select id="editionSelect">
+            <!-- 依所選賽段動態填入可用屆數 -->
           </select>
         </div>
 
@@ -508,6 +526,18 @@
         </div>
 
         <button id="startBtn" class="btn btn-primary btn-lg btn-block">開始作答 →</button>
+      </div>
+
+      <div class="card">
+        <h3>📚 資料來源與官方連結</h3>
+        <p class="lead" style="margin-bottom:0.7rem;">本題庫整理自澳門生產力暨科技轉移中心（CPTTM）「全澳中學生 Python 解難大賽」歷屆真題。官方未公開全部試卷，最新賽情與報名請以官網為準。</p>
+        <ul class="links">
+          <li><a href="https://www.cpttm.org.mo/ist/it-competitions/python-competition/" target="_blank" rel="noopener">CPTTM 官網 · 全澳中學生 Python 解難大賽</a></li>
+          <li><a href="https://events.cpttm.org.mo/competition/226?l=c" target="_blank" rel="noopener">第五屆報名頁（2025）</a></li>
+          <li><a href="https://www.cpttm.org.mo/ist/it-competitions/python-competition/3rd/" target="_blank" rel="noopener">第三屆比賽頁（含初賽真題 PDF）</a></li>
+          <li><a href="https://www.gov.mo/zh-hant/news/1151194/" target="_blank" rel="noopener">政府新聞稿 · 比賽圓滿舉行</a></li>
+        </ul>
+        <p class="src-note">初賽形式：60 分鐘、全卷 100 分、以 Python 3 為準。範圍涵蓋基礎語法、資料結構、檔案處理、list comprehension、lambda/map、生成器/迭代器、OOP 與 dunder methods、numpy / pandas / matplotlib、爬蟲與 XML 解析等。</p>
       </div>
     </section>
 
@@ -565,7 +595,9 @@
 
   <button id="topFab" class="fab" title="回到頂部" aria-label="回到頂部">↑</button>
 
-  <footer>JacksonTai © 2025 · 題目來自澳門生產力暨科技轉移中心 · 模擬測試系統 v2</footer>
+  <footer>
+    JacksonTai © 2025 · 題目來自<a href="https://www.cpttm.org.mo/ist/it-competitions/python-competition/" target="_blank" rel="noopener" style="color:inherit;">澳門生產力暨科技轉移中心</a> · 模擬測試系統 v2
+  </footer>
 
   <!-- ============================================================
        題庫資料
@@ -681,10 +713,19 @@
     ];
     const finalText = [];
 
-    // 題庫總表
+    // 未標註屆數的題目所使用的預設屆數標籤
+    const DEFAULT_EDITION = "歷屆綜合題";
+
+    /**
+     * 題庫總表
+     * 每個賽段（初賽 / 決賽）含一個 source 陣列。
+     * 若要新增某一屆的題目，只需在題目物件加上 edition 欄位，例如：
+     *   { edition: "第四屆", question: "...", options: [...], answerIndex: 0, ... }
+     * 未標 edition 的題目會自動歸入 DEFAULT_EDITION，並出現在「全部屆數」中。
+     */
     const QUESTION_BANKS = {
-      preliminary: { title: "初賽試卷", source: [...preliminaryChoice, ...preliminaryText] },
-      final:       { title: "決賽試卷", source: [...finalChoice, ...finalText] }
+      preliminary: { title: "初賽試卷", stage: "初賽", source: [...preliminaryChoice, ...preliminaryText] },
+      final:       { title: "決賽試卷", stage: "決賽", source: [...finalChoice, ...finalText] }
     };
   </script>
 
@@ -736,7 +777,8 @@
           ...q,
           _id: `${bankKey}-${i}`,
           _bank: bankKey,
-          _isChoice: isChoice(q)
+          _isChoice: isChoice(q),
+          edition: q.edition || DEFAULT_EDITION
         }));
       }
     }
@@ -750,9 +792,19 @@
       return null;
     }
 
+    // 取得某賽段題庫中所有出現過的屆數（保持原始出現順序）
+    function editionsOf(examType) {
+      const seen = [];
+      QUESTION_BANKS[examType].questions.forEach((q) => {
+        if (!seen.includes(q.edition)) seen.push(q.edition);
+      });
+      return seen;
+    }
+
     // ---------- 應用狀態 ----------
     const state = {
       examType: "preliminary",
+      edition: "all",        // "all" 表示全部屆數
       mode: "all",
       shuffle: true,
       timeLimitSec: 0,
@@ -808,7 +860,24 @@
     bindSeg("modeSeg", (v) => { state.mode = v; });
     bindSeg("shuffleSeg", (v) => { state.shuffle = v === "1"; });
 
-    $("examTypeSelect").addEventListener("change", (e) => { state.examType = e.target.value; });
+    // 依目前賽段填入屆數下拉選單
+    function populateEditions() {
+      const sel = $("editionSelect");
+      const editions = editionsOf(state.examType);
+      // 只有一種屆數時，「全部屆數」其實等同該屆，仍提供以保持一致
+      const opts = ['<option value="all">全部屆數</option>']
+        .concat(editions.map((e) => `<option value="${e}">${e}</option>`));
+      sel.innerHTML = opts.join("");
+      state.edition = "all";
+      sel.value = "all";
+    }
+    populateEditions();
+
+    $("examTypeSelect").addEventListener("change", (e) => {
+      state.examType = e.target.value;
+      populateEditions();   // 切換賽段時重新載入可用屆數
+    });
+    $("editionSelect").addEventListener("change", (e) => { state.edition = e.target.value; });
     $("timeLimitSelect").addEventListener("change", (e) => {
       state.timeLimitSec = parseInt(e.target.value, 10) * 60;
     });
@@ -824,22 +893,27 @@
     // ============================================================
     function collectQuestions() {
       const bank = QUESTION_BANKS[state.examType];
+      // 先依屆數篩選（"all" 表示不限）
+      let base = bank.questions;
+      if (state.edition && state.edition !== "all") {
+        base = base.filter((q) => q.edition === state.edition);
+      }
       let pool;
       switch (state.mode) {
         case "choice":
-          pool = bank.questions.filter((q) => q._isChoice);
+          pool = base.filter((q) => q._isChoice);
           break;
         case "text":
-          pool = bank.questions.filter((q) => !q._isChoice);
+          pool = base.filter((q) => !q._isChoice);
           break;
         case "wrong":
-          pool = bank.questions.filter((q) => wrongSet.has(q._id));
+          pool = base.filter((q) => wrongSet.has(q._id));
           break;
         case "bookmark":
-          pool = bank.questions.filter((q) => bookmarks.has(q._id));
+          pool = base.filter((q) => bookmarks.has(q._id));
           break;
         default:
-          pool = bank.questions.slice();
+          pool = base.slice();
       }
       // 永遠在副本上操作，避免破壞原始題庫順序
       pool = pool.slice();
@@ -870,7 +944,12 @@
       resultSection.classList.add("hidden");
       quizSection.classList.remove("hidden");
 
-      $("examTitle").textContent = QUESTION_BANKS[state.examType].title;
+      // 本次題目若橫跨多個屆數，才在題卡上顯示屆數標籤
+      state.showEdition = new Set(state.questions.map((q) => q.edition)).size > 1;
+
+      const bank = QUESTION_BANKS[state.examType];
+      const edLabel = state.edition && state.edition !== "all" ? ` · ${state.edition}` : "";
+      $("examTitle").textContent = bank.title + edLabel;
       $("totalCount").textContent = state.questions.length;
       $("timeWrap").classList.toggle("hidden", false);
 
@@ -916,6 +995,13 @@
       return "程式題";
     }
 
+    // 題目標籤：題型 +（當本次橫跨多個屆數時）屆數標籤
+    function tagsHtml(q) {
+      let html = `<span class="tag">${questionTypeTag(q)}</span>`;
+      if (state.showEdition) html += ` <span class="tag edition">${q.edition}</span>`;
+      return html;
+    }
+
     function makeStarButton(q) {
       const btn = document.createElement("button");
       btn.className = "star-btn" + (bookmarks.has(q._id) ? " on" : "");
@@ -945,7 +1031,7 @@
         no.textContent = idx + 1;
         const qText = document.createElement("div");
         qText.className = "q-text";
-        qText.innerHTML = `${cleanQuestion(q.question)} <span class="tag">${questionTypeTag(q)}</span>`;
+        qText.innerHTML = `${cleanQuestion(q.question)} ${tagsHtml(q)}`;
         top.appendChild(no);
         top.appendChild(qText);
         top.appendChild(makeStarButton(q));
@@ -1023,6 +1109,7 @@
       if (quizSection.classList.contains("hidden")) return;
       save(LS.progress, {
         examType: state.examType,
+        edition: state.edition,
         mode: state.mode,
         shuffle: state.shuffle,
         timeLimitSec: state.timeLimitSec,
@@ -1041,6 +1128,7 @@
         const restored = p.questionIds.map(findQuestionById).filter(Boolean);
         if (restored.length === 0) { remove(LS.progress); $("resumeNotice").classList.add("hidden"); return; }
         state.examType = p.examType;
+        state.edition = p.edition || "all";
         state.mode = p.mode;
         state.shuffle = p.shuffle;
         state.timeLimitSec = p.timeLimitSec;
@@ -1112,7 +1200,7 @@
         no.textContent = idx + 1;
         const qText = document.createElement("div");
         qText.className = "q-text";
-        qText.innerHTML = cleanQuestion(q.question);
+        qText.innerHTML = `${cleanQuestion(q.question)} ${tagsHtml(q)}`;
         top.appendChild(no);
         top.appendChild(qText);
         top.appendChild(makeStarButton(q));
