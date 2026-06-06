@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>全澳中學生 Python 解難大賽 — 模擬測試系統 v2</title>
+  <style>
+    /* ============================================================
+       設計變數（支援深 / 淺色主題）
+       ============================================================ */
+    :root {
+      --bg: #f4f6fb;
+      --surface: #ffffff;
+      --surface-2: #f0f2f8;
+      --text: #1f2733;
+      --text-muted: #5c6675;
+      --border: #e1e5ee;
+      --primary: #2f6df6;
+      --primary-hover: #1d54d4;
+      --primary-soft: #e7f0ff;
+      --success: #1aa260;
+      --success-soft: #e3f7ec;
+      --danger: #e0413c;
+      --danger-soft: #fdecec;
+      --warning: #d98c00;
+      --code-bg: #f3f4f8;
+      --code-text: #b8255b;
+      --shadow: 0 2px 10px rgba(20, 30, 60, 0.06);
+      --shadow-lg: 0 10px 30px rgba(20, 30, 60, 0.12);
+      --radius: 14px;
+      --radius-sm: 9px;
+    }
+    [data-theme="dark"] {
+      --bg: #11151c;
+      --surface: #1a2029;
+      --surface-2: #232b37;
+      --text: #e7ecf3;
+      --text-muted: #9aa6b5;
+      --border: #2c3543;
+      --primary: #5b8dff;
+      --primary-hover: #769eff;
+      --primary-soft: #1d2a44;
+      --success: #3ad17e;
+      --success-soft: #16301f;
+      --danger: #ff6b66;
+      --danger-soft: #361a1a;
+      --warning: #ffb648;
+      --code-bg: #232b37;
+      --code-text: #ff8fb4;
+      --shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+      --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Segoe UI", Roboto, "PingFang TC", "Microsoft JhengHei", "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      min-height: 100vh;
+      transition: background 0.25s ease, color 0.25s ease;
+    }
+
+    /* ---------- 頂部導覽列 ---------- */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: linear-gradient(120deg, var(--primary), var(--primary-hover));
+      color: #fff;
+      box-shadow: var(--shadow);
+    }
+    .topbar-inner {
+      max-width: 920px;
+      margin: auto;
+      padding: 0.85rem 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .brand {
+      font-size: 1.12rem;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .brand .logo {
+      width: 30px; height: 30px;
+      background: rgba(255,255,255,0.18);
+      border-radius: 8px;
+      display: grid; place-items: center;
+      font-size: 1rem;
+    }
+    .icon-btn {
+      background: rgba(255,255,255,0.15);
+      border: none;
+      color: #fff;
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 1.15rem;
+      display: grid; place-items: center;
+      transition: background 0.2s;
+    }
+    .icon-btn:hover { background: rgba(255,255,255,0.3); }
+
+    .container { max-width: 920px; margin: auto; padding: 1.25rem 1.1rem 3rem; }
+
+    /* ---------- 卡片通用 ---------- */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      box-shadow: var(--shadow);
+    }
+    .card + .card { margin-top: 1rem; }
+    h1 { font-size: 1.5rem; margin-bottom: 0.4rem; }
+    h2 { font-size: 1.25rem; margin-bottom: 0.9rem; }
+    h3 { font-size: 1.05rem; margin-bottom: 0.6rem; }
+    .lead { color: var(--text-muted); margin-bottom: 1.1rem; }
+
+    /* ---------- 表單 ---------- */
+    .field { margin-bottom: 1.1rem; }
+    .field > label { display: block; font-weight: 600; margin-bottom: 0.45rem; }
+    select {
+      width: 100%;
+      padding: 0.7rem 0.8rem;
+      font-size: 1rem;
+      color: var(--text);
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+    }
+    select:focus { outline: 2px solid var(--primary); outline-offset: 1px; }
+
+    .seg {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .seg .opt {
+      flex: 1 1 auto;
+      min-width: 130px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      border-radius: var(--radius-sm);
+      padding: 0.6rem 0.7rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      user-select: none;
+    }
+    .seg .opt:hover { border-color: var(--primary); }
+    .seg .opt.active {
+      border-color: var(--primary);
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-weight: 600;
+    }
+    .seg .opt .sub { display:block; font-size: 0.78rem; color: var(--text-muted); font-weight: 400; }
+    .seg .opt.active .sub { color: var(--primary); }
+    .seg .opt input { display: none; }
+
+    /* ---------- 按鈕 ---------- */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      padding: 0.7rem 1.3rem;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.08s, background 0.2s, box-shadow 0.2s;
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-success:hover { filter: brightness(0.95); }
+    .btn-ghost {
+      background: var(--surface-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { border-color: var(--primary); color: var(--primary); }
+    .btn-block { width: 100%; }
+    .btn-lg { padding: 0.85rem 1.5rem; font-size: 1.08rem; }
+    .btn-row { display: flex; flex-wrap: wrap; gap: 0.7rem; }
+
+    /* ---------- 作答進度列 ---------- */
+    .quiz-head {
+      position: sticky;
+      top: 58px;
+      z-index: 40;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.9rem 1.1rem;
+      box-shadow: var(--shadow);
+      margin-bottom: 1rem;
+    }
+    .quiz-head .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .quiz-title { font-size: 1.1rem; font-weight: 700; }
+    .stats { display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.9rem; color: var(--text-muted); }
+    .stats b { color: var(--text); }
+    .stats .danger { color: var(--danger); }
+    .progress-track {
+      height: 8px;
+      background: var(--surface-2);
+      border-radius: 99px;
+      overflow: hidden;
+      margin-top: 0.8rem;
+    }
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--primary), var(--success));
+      border-radius: 99px;
+      transition: width 0.3s ease;
+    }
+
+    /* ---------- 題目卡片 ---------- */
+    .question-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.15rem 1.25rem;
+      margin-bottom: 1rem;
+      box-shadow: var(--shadow);
+      scroll-margin-top: 130px;
+    }
+    .q-top {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6rem;
+      margin-bottom: 0.85rem;
+    }
+    .q-no {
+      flex: 0 0 auto;
+      min-width: 2rem; height: 2rem;
+      padding: 0 0.5rem;
+      background: var(--primary-soft);
+      color: var(--primary);
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      display: grid; place-items: center;
+    }
+    .q-text { flex: 1; font-weight: 600; }
+    .q-text code, .q-text pre { font-weight: 400; }
+    .tag {
+      font-size: 0.72rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 99px;
+      background: var(--surface-2);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .star-btn {
+      flex: 0 0 auto;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.2rem;
+      color: var(--text-muted);
+      line-height: 1;
+      transition: transform 0.12s;
+    }
+    .star-btn:hover { transform: scale(1.2); }
+    .star-btn.on { color: #f5b301; }
+
+    /* 選項 */
+    .options { display: flex; flex-direction: column; gap: 0.5rem; }
+    .option {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0.65rem 0.8rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.15s;
+      background: var(--surface);
+    }
+    .option:hover { border-color: var(--primary); background: var(--surface-2); }
+    .option input { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; }
+    .option.selected { border-color: var(--primary); background: var(--primary-soft); }
+    .opt-letter { font-weight: 700; color: var(--text-muted); }
+
+    textarea {
+      width: 100%;
+      min-height: 110px;
+      padding: 0.7rem 0.8rem;
+      font-size: 0.98rem;
+      font-family: inherit;
+      color: var(--text);
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      resize: vertical;
+    }
+    textarea:focus { outline: 2px solid var(--primary); outline-offset: 1px; }
+
+    /* 程式碼樣式 */
+    code {
+      background: var(--code-bg);
+      color: var(--code-text);
+      padding: 0.1rem 0.35rem;
+      border-radius: 5px;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 0.9em;
+    }
+    .q-text code, .analysis-box code, .ans-line code { white-space: pre-wrap; }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.8rem 0.9rem;
+      overflow-x: auto;
+      margin: 0.5rem 0;
+    }
+    pre code { background: none; color: var(--text); padding: 0; }
+
+    /* ---------- 結果頁 ---------- */
+    .score-hero {
+      text-align: center;
+      padding: 1.5rem 1rem;
+    }
+    .score-ring {
+      --val: 0;
+      width: 150px; height: 150px;
+      margin: 0.5rem auto 1rem;
+      border-radius: 50%;
+      background:
+        radial-gradient(closest-side, var(--surface) 70%, transparent 71%),
+        conic-gradient(var(--primary) calc(var(--val) * 1%), var(--surface-2) 0);
+      display: grid; place-items: center;
+      position: relative;
+    }
+    .score-ring .num { font-size: 2.1rem; font-weight: 800; color: var(--primary); }
+    .score-ring .unit { font-size: 0.85rem; color: var(--text-muted); }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 0.8rem;
+      margin-top: 0.5rem;
+    }
+    .summary-grid .box {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.8rem;
+      text-align: center;
+    }
+    .summary-grid .box .n { font-size: 1.4rem; font-weight: 700; }
+    .summary-grid .box .l { font-size: 0.82rem; color: var(--text-muted); }
+
+    .analysis-box {
+      background: var(--surface-2);
+      border-left: 3px solid var(--primary);
+      border-radius: 8px;
+      padding: 0.7rem 0.9rem;
+      margin-top: 0.8rem;
+      font-size: 0.95rem;
+    }
+    .analysis-box p { margin: 0.15rem 0; }
+    .ans-line { margin: 0.5rem 0; }
+    .badge {
+      display: inline-block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 0.1rem 0.55rem;
+      border-radius: 99px;
+      margin-left: 0.3rem;
+    }
+    .badge.correct { background: var(--success-soft); color: var(--success); }
+    .badge.wrong { background: var(--danger-soft); color: var(--danger); }
+    .badge.skip { background: var(--surface-2); color: var(--text-muted); border: 1px solid var(--border); }
+    .badge.review { background: var(--primary-soft); color: var(--primary); }
+    .correct-text { color: var(--success); font-weight: 600; }
+    .wrong-text { color: var(--danger); font-weight: 600; }
+    .question-card.is-wrong { border-color: var(--danger); }
+    .question-card.is-correct { border-color: var(--success); }
+
+    /* ---------- 浮動回頂 ---------- */
+    .fab {
+      position: fixed;
+      right: 18px; bottom: 18px;
+      width: 46px; height: 46px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-size: 1.2rem;
+      box-shadow: var(--shadow-lg);
+      display: none;
+      z-index: 60;
+    }
+    .fab.show { display: grid; place-items: center; }
+
+    /* ---------- 提示 / 空狀態 ---------- */
+    .notice {
+      background: var(--primary-soft);
+      border: 1px solid var(--primary);
+      color: var(--text);
+      border-radius: var(--radius-sm);
+      padding: 0.8rem 1rem;
+      font-size: 0.92rem;
+      margin-bottom: 1rem;
+    }
+    .empty { text-align: center; color: var(--text-muted); padding: 2rem 1rem; }
+
+    .hidden { display: none !important; }
+
+    footer {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      padding: 1.5rem 1rem;
+    }
+
+    @media (max-width: 600px) {
+      h1 { font-size: 1.3rem; }
+      .quiz-head { top: 56px; }
+      .seg .opt { min-width: calc(50% - 0.25rem); }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand"><span class="logo">🐍</span><span>Python 解難大賽 · 模擬測試</span></div>
+      <button id="themeBtn" class="icon-btn" title="切換深 / 淺色主題" aria-label="切換主題">🌙</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- ====================== 首頁 / 設定 ====================== -->
+    <section id="welcomeSection">
+      <div class="card">
+        <h1>歡迎使用模擬測試系統</h1>
+        <p class="lead">選擇試卷與練習模式，即可開始模擬作答。系統會自動記錄你的錯題與收藏，方便日後重練。</p>
+
+        <div id="resumeNotice" class="notice hidden">
+          📌 偵測到尚未完成的作答進度。
+          <div class="btn-row" style="margin-top:0.6rem;">
+            <button id="resumeBtn" class="btn btn-primary">繼續作答</button>
+            <button id="discardBtn" class="btn btn-ghost">捨棄並重新開始</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="examTypeSelect">試卷類型</label>
+          <select id="examTypeSelect">
+            <option value="preliminary">初賽試卷</option>
+            <option value="final">決賽試卷</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>練習模式</label>
+          <div class="seg" id="modeSeg">
+            <label class="opt active"><input type="radio" name="mode" value="all" checked>全部題目<span class="sub">選擇題 + 程式 / 簡答</span></label>
+            <label class="opt"><input type="radio" name="mode" value="choice">只練選擇題<span class="sub">自動計分</span></label>
+            <label class="opt"><input type="radio" name="mode" value="text">只練程式 / 簡答<span class="sub">對照參考答案</span></label>
+            <label class="opt"><input type="radio" name="mode" value="wrong">錯題重練<span class="sub" id="wrongCountSub">錯題本：0 題</span></label>
+            <label class="opt"><input type="radio" name="mode" value="bookmark">我的收藏<span class="sub" id="bmCountSub">收藏：0 題</span></label>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="timeLimitSelect">作答時限</label>
+          <select id="timeLimitSelect">
+            <option value="0">不限時</option>
+            <option value="15">15 分鐘</option>
+            <option value="30">30 分鐘</option>
+            <option value="45">45 分鐘</option>
+            <option value="60">60 分鐘</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>題目順序</label>
+          <div class="seg" id="shuffleSeg">
+            <label class="opt active"><input type="radio" name="shuffle" value="1" checked>隨機打亂</label>
+            <label class="opt"><input type="radio" name="shuffle" value="0">依原順序</label>
+          </div>
+        </div>
+
+        <button id="startBtn" class="btn btn-primary btn-lg btn-block">開始作答 →</button>
+      </div>
+    </section>
+
+    <!-- ====================== 作答中 ====================== -->
+    <section id="quizSection" class="hidden">
+      <div class="quiz-head">
+        <div class="row">
+          <span class="quiz-title" id="examTitle"></span>
+          <div class="stats">
+            <span>已答 <b id="answeredCount">0</b> / <b id="totalCount">0</b></span>
+            <span id="timeWrap">時間 <b id="timeDisplay">00:00</b></span>
+          </div>
+        </div>
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      </div>
+
+      <div id="questionContainer"></div>
+
+      <div class="btn-row" style="margin-top:0.5rem;">
+        <button id="submitBtn" class="btn btn-success btn-lg">提交試卷</button>
+        <button id="quitBtn" class="btn btn-ghost">放棄並返回</button>
+      </div>
+    </section>
+
+    <!-- ====================== 結果 ====================== -->
+    <section id="resultSection" class="hidden">
+      <div class="card score-hero">
+        <h2 style="margin-bottom:0.2rem;">作答結果</h2>
+        <div class="score-ring" id="scoreRing">
+          <div>
+            <div class="num" id="scorePercent">0</div>
+            <div class="unit">選擇題得分 (%)</div>
+          </div>
+        </div>
+        <div class="summary-grid">
+          <div class="box"><div class="n" id="sumCorrect">0</div><div class="l">答對</div></div>
+          <div class="box"><div class="n" id="sumTotalChoice">0</div><div class="l">選擇題數</div></div>
+          <div class="box"><div class="n" id="sumText">0</div><div class="l">程式 / 簡答</div></div>
+          <div class="box"><div class="n" id="sumTime">00:00</div><div class="l">用時</div></div>
+        </div>
+        <div class="btn-row" style="justify-content:center; margin-top:1.1rem;">
+          <button id="retryWrongBtn" class="btn btn-primary">只重練錯題</button>
+          <button id="restartBtn" class="btn btn-ghost">重新作答本卷</button>
+          <button id="backHomeBtn" class="btn btn-ghost">返回首頁</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>逐題解析</h3>
+        <p class="lead" style="margin-bottom:0.8rem;">以下列出所有題目的對錯、正確答案、知識點與解題思路。點擊星號可加入收藏。</p>
+        <div id="analysisContainer"></div>
+      </div>
+    </section>
+  </div>
+
+  <button id="topFab" class="fab" title="回到頂部" aria-label="回到頂部">↑</button>
+
+  <footer>JacksonTai © 2025 · 題目來自澳門生產力暨科技轉移中心 · 模擬測試系統 v2</footer>
+
+  <!-- ============================================================
+       題庫資料
+       格式：
+         選擇題 { question, options[], answerIndex, knowledge_points, solution_idea }
+         非選擇題 { type:"text", question, answer, knowledge_points, solution_idea }
+       題目字串可保留原始題號 / 「簡答題 N：」前綴，系統會自動清除並重新編號。
+       ============================================================ -->
+  <script>
+    // ================= 初賽：選擇題 =================
+    const preliminaryChoice = [
+      { question: "1. 如何取得今日的日期 YYYY-MM-DD 格式？", options: ["datetime.date.today()", "datetime.datetime.today()", "datetime.now()", "date.today()"], answerIndex: 0, knowledge_points: "datetime.date.today() 返回格式為 YYYY-MM-DD", solution_idea: "選擇最直接返回日期的方法" },
+      { question: "2. 以下哪一個是 Python 註解寫法？", options: ["#", "//", "/* */", "<!-- -->"], answerIndex: 0, knowledge_points: "Python 使用 # 來作單行註解", solution_idea: "直接使用 #" },
+      { question: "3. Python 檔案一般以什麼 extension 結尾？", options: [".txt", ".html", ".py", ".js"], answerIndex: 2, knowledge_points: "Python 原始碼檔案副檔名為 .py", solution_idea: "選擇 .py 為正確答案" },
+      { question: "4. 假設在 numpy array L 中有 0-1 之間的小數，如何取得少於 0.2 的所有數字？", options: ["L[L < 0.2]", "L.filter(0.2)", "np.where(L < 0.2)", "L.find(0.2)"], answerIndex: 0, knowledge_points: "利用布林索引 L[L < 0.2] 可以過濾元素", solution_idea: "布林索引是 numpy 過濾數據的常用方法" },
+      { question: "5. 在 Python 中，iterator/generator 如何知道到達結尾？", options: ["By returning None", "By returning False", "By raising StopIteration", "By raising IndexError"], answerIndex: 2, knowledge_points: "當迭代完畢時會拋出 StopIteration 異常", solution_idea: "這是迭代器協議的一部分" },
+      { question: "6. 現要得出二次方數列，哪種寫法可行？", options: ["[x**2 for x in range(10)]", "list(map(lambda x:x**2, range(10)))", "[x*x for x in range(10)]", "以上皆可"], answerIndex: 1, knowledge_points: "使用 map 與 lambda 可得到二次方數列", solution_idea: "其他選項也正確，但題目標示正確答案為 map 寫法" },
+      { question: "7. 以下程式片段，寫入檔案後再讀取，印出結果為？<br><code>with open('/tmp/test.txt', 'w') as file_obj:\n    file_obj.write('A')\n    file_obj.write('B')\n    file_obj.write('C')\n    file_obj.write('D')\nwith open('/tmp/test.txt') as file_obj:\n    print(file_obj.read())</code>", options: ["A B C D", "ABCD", "A\nB\nC\nD", "Error"], answerIndex: 1, knowledge_points: "write() 寫入不會自動加入換行", solution_idea: "結果會連續寫入為 ABCD" },
+      { question: "8. 有一列表 emails，想以逗號分隔合併成字串，應執行？", options: ["str.join(emails)", '", ".join(emails)', "emails.join(', ')", "join(emails, ',')"], answerIndex: 1, knowledge_points: "使用 join() 方法合併列表字串", solution_idea: "正確語法為 \", \".join(emails)" },
+      { question: "9. 三個引號組成的一串代碼屬於？", options: ["Comment", "Documentation String (DocString)", "Multi-line string", "None"], answerIndex: 1, knowledge_points: "三引號通常用於撰寫 DocString", solution_idea: "這是 Python 的文件字串慣用法" },
+      { question: "10. Python 函數 hello 的 Doc String 存取方式？", options: ["hello.__doc__", "hello.doc()", "hello.comment", "hello.getDoc()"], answerIndex: 0, knowledge_points: "內建屬性 __doc__ 存取 DocString", solution_idea: "直接使用 hello.__doc__" },
+      { question: "11. 定義變量的方法？", options: ["var x = 123", "int x = 123", "x = 123", "x := 123"], answerIndex: 2, knowledge_points: "Python 中直接用 = 進行賦值", solution_idea: "直接 x = 123 為正確用法" },
+      { question: "12. 程式：<br><code>sample_list = list(range(10))\npower_ten = lambda x: x**10\nresult = [power_ten(x) for x in sample_list if power_ten(x) < 3000]\nprint(result)</code><br>輸出結果為？", options: ["[0,1]", "[0,1,1024,59049]", "[0, 1, 1024]", "Error"], answerIndex: 2, knowledge_points: "2^10=1024，3^10=59049 超過 3000", solution_idea: "只有 0, 1, 1024 小於 3000" },
+      { question: "13. import untangle 解析 XML \"<Weather>23</Weather>\", <code>type(data.Weather.cdata)</code>？", options: ["<class 'int'>", "<class 'xml'>", "<class 'list'>", "<class 'str'>"], answerIndex: 3, knowledge_points: "untangle 將 XML 內容解析為字串", solution_idea: "cdata 為字串型態" },
+      { question: "14. Python 建議縮排多少個空格？", options: ["2", "3", "4", "8"], answerIndex: 2, knowledge_points: "PEP 8 建議縮排 4 個空格", solution_idea: "4 個空格為標準縮排" },
+      { question: "15. List 和 Tuple 的分別是？", options: ["List 可以修改，Tuple 唯讀(不可改)", "List 唯讀，Tuple 可以修改", "兩者皆可修改", "兩者皆不可修改"], answerIndex: 0, knowledge_points: "List 為可變資料型別，Tuple 為不可變", solution_idea: "選擇正確描述可變與唯讀特性" },
+      { question: "16. Python 中，開啟文件並繼續寫入，應用哪種模式？", options: ["'r'", "'w'", "'a'", "'x'"], answerIndex: 2, knowledge_points: "'a' 模式用於追加內容", solution_idea: "選擇 append 模式" },
+      { question: "17. 爬取資料時，若想取得 <code>&lt;aside&gt;</code> 裡所有 <code>&lt;a&gt;</code> 連結，CSS 選擇器應填？", options: ["aside a", "aside > a", "aside:a", "a in aside"], answerIndex: 0, knowledge_points: "CSS 選擇器語法：後代選擇器", solution_idea: "使用 'aside a' 選取所有在 aside 裡的 a 元素" },
+      { question: "18. 預設只安裝官方套件，<code>import this</code> 輸出什麼？", options: ["一段說明文件", "錯誤訊息", "The Zen of Python 詩", "None"], answerIndex: 2, knowledge_points: "import this 會印出 The Zen of Python", solution_idea: "選擇正確描述詩的標題" },
+      { question: "19. 定義子類 ElectronicCar，基於父類 Car，語法？", options: ["class ElectronicCar(Car):", "class ElectronicCar extends Car:", "def ElectronicCar(Car):", "ElectronicCar = Car()"], answerIndex: 0, knowledge_points: "Python 中繼承使用括號指定父類", solution_idea: "正確語法為 class ElectronicCar(Car):" },
+      { question: "20. Generator 中，使用哪個指令產生下一個數值？", options: ["return value", "yield value", "next(value)", "send(value)"], answerIndex: 1, knowledge_points: "yield 用於生成器產出數值", solution_idea: "生成器中用 yield 產生下一個數值" },
+      { question: "21. Matplotlib 中的 right boundary (spine)？", options: ["border", "spine", "edge", "frame"], answerIndex: 1, knowledge_points: "透過 plt.gca().spines['right'] 可取得", solution_idea: "選擇正確的邊框屬性名稱" },
+      { question: "22. 若想自定義列印類別時輸出的字串，需要實作哪個 dunder method？", options: ["__str__", "__repr__", "__print__", "__format__"], answerIndex: 1, knowledge_points: "推薦實作 __repr__ 來獲得開發者友好輸出", solution_idea: "使用 __repr__ 定義類別的正式字串表示" },
+      { question: "23. Python 定義物件類別(Class)的關鍵字是？", options: ["class", "struct", "define", "object"], answerIndex: 0, knowledge_points: "使用關鍵字 class 定義類別", solution_idea: "正確語法為 class 類別名稱:" },
+      { question: "24. 下列何者是 Python 正確且建議的變量命名？", options: ["news_heading", "NewsHeading", "newHeading", "new_sh"], answerIndex: 0, knowledge_points: "慣用 snake_case 命名", solution_idea: "news_heading 為正確命名方式" },
+      { question: "25. Iterator 用哪個 dunder method 來決定下一個數值？", options: ["__iter__", "__prev__", "__next__", "__advance__"], answerIndex: 2, knowledge_points: "迭代器透過 __next__ 返回下一個元素", solution_idea: "直接使用 __next__" },
+      { question: "26. Python 定義函數的關鍵字是？", options: ["func", "def", "function", "lambda"], answerIndex: 1, knowledge_points: "使用 def 定義函數", solution_idea: "正確語法為 def 函數名稱(參數):" },
+      { question: "27. 用 with 語法時，內部會自動呼叫哪兩個 dunder method？", options: ["__enter__ 與 __exit__", "__init__ 與 __del__", "__start__ 與 __stop__", "__open__ 與 __close__"], answerIndex: 0, knowledge_points: "with 語法會自動調用 __enter__ 和 __exit__", solution_idea: "這兩個方法分別處理進入與退出上下文" },
+      { question: "28. 如何得出列表項目總數？", options: ["count()", "len(sample_list)", "size()", "sum()"], answerIndex: 1, knowledge_points: "len() 返回列表長度", solution_idea: "使用 len(列表) 得到項數" },
+      { question: "29. Python 中，Doc String 通常是以什麼格式出現？", options: ["\"\"\" ... \"\"\"", "''' ... '''", "/* ... */", "<!-- ... -->"], answerIndex: 1, knowledge_points: "DocString 常以三個單引號呈現", solution_idea: "選擇 ''' ... ''' 格式" },
+      { question: "30. Matplotlib 中的圖例顯示函數是哪一個？", options: ["plt.show()", "legend()", "plt.legend()", "plt.label()"], answerIndex: 2, knowledge_points: "plt.legend() 用於顯示圖例", solution_idea: "正確語法為 plt.legend()" },
+      { question: "31. 使用 open 開啟的文件對象，用完後是否需要 close？", options: ["需要，除非使用 with 自動關閉", "不需要", "取決於文件大小", "只有在寫入模式下需要"], answerIndex: 0, knowledge_points: "若不使用 with，則需手動關閉", solution_idea: "養成手動 close 或使用 with 語法的習慣" },
+      { question: "32. 要找出字串中 \"Python\" 出現了多少次，應執行？", options: ["str.find(\"Python\")", "sample_str.count(\"Python\")", "str.index(\"Python\")", "sample_str.search(\"Python\")"], answerIndex: 1, knowledge_points: "count() 返回指定子字串的出現次數", solution_idea: "使用 sample_str.count(\"Python\")" },
+      { question: "33. 關於 Python 的 List，下列哪個描述錯誤？", options: ["List 可修改", "List 第一格 Index 是 1", "List 支援切片操作", "List 可以存放不同型別資料"], answerIndex: 1, knowledge_points: "Python 中列表的索引從 0 開始", solution_idea: "正確描述應為第一格索引為 0" },
+      { question: "34. 自定義了一個新的數據類別(向量)，若想定義兩者相加用哪個 dunder method？", options: ["__sub__", "__mul__", "__add__", "__div__"], answerIndex: 2, knowledge_points: "定義加法運算使用 __add__", solution_idea: "在類別中實作 __add__ 方法即可" },
+      { question: "35. 對列表做隨機打亂，應用哪個？", options: ["random.choice()", "random.sample()", "random.sort()", "random.shuffle(sample_list)"], answerIndex: 3, knowledge_points: "random.shuffle() 可原地打亂列表", solution_idea: "選擇 random.shuffle() 為正確方法" },
+      { question: "如何使用 pandas DataFrame 進行數據排序？", options: ["df.sort_values()", "df.sort_index()", "df.order()", "df.sort()"], answerIndex: 0, knowledge_points: "pandas 基本操作", solution_idea: "pandas 提供 sort_values() 方法对 DataFrame 进行排序。" },
+      { question: "如何在 pandas DataFrame 中選擇一欄（Column）？", options: ["df.loc['column_name']", "df.iloc['column_name']", "df.at['column_name']", "df['column_name']"], answerIndex: 3, knowledge_points: "pandas 選擇數據", solution_idea: "使用 df['column_name'] 是選取單列數據的標準方法。" },
+      { question: "如何使用 pandas 將 DataFrame 寫入 CSV 文件？", options: ["df.to_csv()", "df.to_excel()", "df.to_table()", "df.to_sql()"], answerIndex: 0, knowledge_points: "pandas 文件操作", solution_idea: "DataFrame 的 to_csv() 方法可將數據寫入 CSV 文件。" },
+      { question: "在 Python 中，如何在列表末尾添加元素？", options: ["list.append(item)", "list.add(item)", "list.extend(item)", "list.insert(item)"], answerIndex: 0, knowledge_points: "列表操作", solution_idea: "append() 方法將元素附加到列表末尾，其他方法用途不同。" },
+      { question: "如何使用 pandas 創建一個 DataFrame？", options: ["pd.newDataFrame(data)", "pd.createDataFrame(data)", "pd.DataFrame(data)", "pd.createData(data)"], answerIndex: 2, knowledge_points: "pandas 基本操作", solution_idea: "正確寫法為使用 pd.DataFrame() 創建 DataFrame。" },
+      { question: "使用 numpy 求解矩陣的行列式的函數是？", options: ["np.linalg.eig()", "np.linalg.inv()", "np.linalg.det()", "np.linalg.solve()"], answerIndex: 2, knowledge_points: "numpy 線性代數", solution_idea: "np.linalg.det() 用於計算矩陣的行列式。" },
+      { question: "在 Python 中，要從 list 中刪除最後一個元素，可以使用哪個方法？", options: ["pop()", "remove()", "del()", "clear()"], answerIndex: 0, knowledge_points: "列表操作", solution_idea: "pop() 方法默認刪除並返回列表中的最後一個元素。" },
+      { question: "如何使用 numpy 生成範圍在 0 到 100 之間的 10 個均勻分布的數字？", options: ["np.arange(0, 100, 10)", "np.linspace(0, 100, 10)", "np.logspace(0, 100, 10)", "np.random.randint(0, 100, 10)"], answerIndex: 1, knowledge_points: "numpy 基本函數", solution_idea: "np.linspace() 用於生成指定範圍內均勻分布的數字。" },
+      { question: "在 Python 中，如何使用 list comprehension 生成 1 到 10 的平方值列表？", options: ["[i ** 2 for i in range(1, 11)]", "[i ** 2 for i in (1, 11)]", "[i ** 2 for i in range(1, 10)]", "A 和 B 都可以"], answerIndex: 0, knowledge_points: "列表推導式", solution_idea: "正確的寫法是利用 range(1,11) 遍歷 1 到 10 並取平方，選項 B 寫法不正確。" },
+      { question: "在 Python 中，如何使用 break 語句？", options: ["break()", "break", "exit", "stop"], answerIndex: 1, knowledge_points: "流程控制", solution_idea: "break 是一個關鍵字，用於退出循環，不需要括號。" },
+      { question: "如何使用 numpy 創建一個全零矩陣？", options: ["np.full(shape, 0)", "np.ones(shape)", "np.empty(shape)", "np.zeros(shape)"], answerIndex: 3, knowledge_points: "numpy 數組創建", solution_idea: "np.zeros() 函數根據給定形狀創建全 0 的數組。" },
+      { question: "如何計算 numpy 數組中的元素總和？", options: ["np.mean(array)", "np.prod(array)", "np.cumsum(array)", "np.sum(array)"], answerIndex: 3, knowledge_points: "numpy 基本運算", solution_idea: "np.sum() 用於計算數組所有元素的總和。" },
+      { question: "Tuple 的初始化可以使用哪個符號？", options: ["{}", "[]", "()", "<>"], answerIndex: 2, knowledge_points: "數據結構", solution_idea: "元組用圓括號 () 來表示。" },
+      { question: "如何在 pandas DataFrame 中應用自定義函數？", options: ["df.map(function)", "df.apply(function)", "df.applymap(function)", "df.transform(function)"], answerIndex: 1, knowledge_points: "pandas 數據處理", solution_idea: "對於列級操作，使用 df.apply(function) 是常見做法。" },
+      { question: "在 Python 中，如何使用 while 迴圈？", options: ["while(condition)", "while condition:", "while condition, do:", "while condition do:"], answerIndex: 1, knowledge_points: "流程控制", solution_idea: "while 迴圈的正確語法為 while condition: 後跟縮排的程式碼塊。" },
+      { question: "如何在 Python 中查找一個 tuple 或 list 中的最大值？", options: ["len(tuple_or_list)", "tuple_or_list.max()", "max(tuple_or_list)", "tuple_or_list[-1]"], answerIndex: 2, knowledge_points: "內建函數", solution_idea: "內置函數 max() 可用於查找序列中的最大值。" },
+      { question: "在 Python 中，下列哪個函數可以用來計算 list 中的中位數？", options: ["median()", "mean()", "mode()", "max()"], answerIndex: 0, knowledge_points: "統計函數", solution_idea: "在 statistics 模組中提供 median() 用於計算中位數。" },
+      { question: "下列 Python 代碼的輸出結果是什麼？<br><code>import pandas as pd\ndata = {'name': ['Alice', 'Bob', 'Charlie'], 'age': [25, 30, 35]}\ndf = pd.DataFrame(data)\nprint(df.loc[df['age'] > 30]['name'])</code>", options: ["Alice, Bob, Charlie", "Bob, Charlie", "Charlie", "Error"], answerIndex: 2, knowledge_points: "pandas 資料篩選", solution_idea: "篩選條件 df['age'] > 30 只匹配到年齡 35 的那一行，即 'Charlie'。" },
+      { question: "下列 Python 代碼的輸出圖像類型是什麼？<br><code>import matplotlib.pyplot as plt\nx = [1, 2, 3, 4, 5]\ny = [2, 4, 6, 8, 10]\nplt.plot(x, y)\nplt.show()</code>", options: ["A bar chart", "A line chart", "A scatter plot", "A pie chart"], answerIndex: 1, knowledge_points: "matplotlib 基本繪圖", solution_idea: "plt.plot() 默認繪製折線圖。" },
+      { question: "在 numpy 中，下列哪個函數可以用來計算 list 中的標準差？", options: ["mean()", "var()", "sum()", "std()"], answerIndex: 3, knowledge_points: "numpy 統計函數", solution_idea: "np.std() 用於計算數組的標準差。" },
+      { question: "在 Matplotlib 中，以下哪個函數用於在圖形中添加一個文本框，用於顯示注釋或說明？", options: ["plot()", "scatter()", "text()", "annotate()"], answerIndex: 3, knowledge_points: "matplotlib 圖形標註", solution_idea: "annotate() 可用來在圖中添加帶箭頭的文本標註。" },
+      { question: "如何在 Python 中創建變量？", options: ["var = value", "var := value", "var(value)", "var -> value"], answerIndex: 0, knowledge_points: "Python 變量賦值", solution_idea: "直接使用賦值語句 var = value 來創建變量。" },
+      { question: "在 Python 中，如何創建一個空字典？", options: ["my_dict = {}", "my_dict = dict()", "兩者皆正確", "兩者皆不正確"], answerIndex: 2, knowledge_points: "Python 基本數據類型", solution_idea: "{} 和 dict() 都能創建空字典。" },
+      { question: "下列 Python 代碼的輸出結果是什麼？<br><code>import numpy as np\na = np.array([1, 2, 3])\nb = np.array([4, 5, 6])\nc = a + b\nprint(c)</code>", options: ["[1, 2, 3, 4, 5, 6]", "[5, 7, 9]", "[4, 5, 6]", "[1, 4, 9]"], answerIndex: 1, knowledge_points: "numpy 數組運算", solution_idea: "兩個數組逐元素相加：1+4, 2+5, 3+6 得到 [5, 7, 9]。" },
+      { question: "如何創建一個 3x3 的 numpy 數組，並將所有元素初始化為 0？", options: ["np.zeros((3, 3))", "np.ones((3, 3))", "np.empty((3, 3))", "np.array([(0, 0, 0), (0, 0, 0), (0, 0, 0)])"], answerIndex: 0, knowledge_points: "numpy 數組創建", solution_idea: "np.zeros((3,3)) 直接生成 3x3 全 0 數組。" },
+      { question: "使用 matplotlib 儲存圖形的函數是？", options: ["plt.save()", "plt.savefig()", "plt.export()", "plt.store()"], answerIndex: 1, knowledge_points: "matplotlib 文件輸出", solution_idea: "plt.savefig() 用於將當前圖形保存到文件中。" },
+      { question: "在 Python 中，如何使用 if 條件語句？", options: ["if(condition)", "if condition:", "if condition then:", "if condition, then:"], answerIndex: 1, knowledge_points: "Python 條件語句", solution_idea: "正確語法為 if condition: 後跟縮排代碼塊。" },
+      { question: "如何在 Python 中反轉一個 list？", options: ["reversed(lst)", "lst.reverse()", "lst = lst.reverse()", "B 和 C 都可以"], answerIndex: 0, knowledge_points: "列表操作", solution_idea: "reversed(lst) 返回一個反轉的迭代器，比直接調用 lst.reverse() 更靈活。" },
+      { question: "在 Python 中，下列哪個語句可以用來將 list 中的元素轉換為 set？", options: ["set()", "list()", "tuple()", "dict()"], answerIndex: 0, knowledge_points: "數據類型轉換", solution_idea: "直接使用 set() 可將列表轉換為集合。" },
+      { question: "下列 Python 代碼的輸出結果是什麼？<br><code>import pandas as pd\ndata = {'name': ['Alice', 'Bob', 'Charlie'], 'age': [25, 30, 35]}\ndf = pd.DataFrame(data)\nprint(df['name'])</code>", options: ["[25, 30, 35]", "name", "Alice, Bob, Charlie", "Error"], answerIndex: 2, knowledge_points: "pandas 資料選取", solution_idea: "df['name'] 提取 name 列並返回一個 pandas Series，內容為三個名字。" },
+      { question: "在 Python 中，下列哪個函數可以用來計算 list 中元素的總和？", options: ["count()", "len()", "max()", "sum()"], answerIndex: 3, knowledge_points: "內建函數", solution_idea: "內置函數 sum() 用於對可迭代對象求和。" },
+      { question: "在 Python 中，下列哪一個語句可以用來建立一個空的 list？", options: ["list()", "[]", "()", "{}"], answerIndex: 1, knowledge_points: "數據類型創建", solution_idea: "最常用且直觀的方式是使用 [] 來創建空列表。" },
+      { question: "在 numpy 中，下列哪個函數可以用來計算 list 中的平均值？", options: ["avg()", "sum()", "mean()", "average()"], answerIndex: 2, knowledge_points: "numpy 統計函數", solution_idea: "np.mean() 用於計算數組的平均值。" },
+      { question: "如在 for loop 中使用 continue 的意義是？", options: ["跳過當前迴圈，並繼續執行後面的程式碼", "跳過當前迴圈的剩餘部分，並立即開始下一次迴圈", "重新開始迴圈", "立即停止迴圈並跳出迴圈"], answerIndex: 1, knowledge_points: "流程控制", solution_idea: "continue 語句會結束本次迴圈剩餘部分，直接進入下一次迭代。" },
+      { question: "下列 Python 代碼的輸出結果是什麼？<br><code>lst = [1, 2, 3, 4, 5]\nsquared = [x**2 for x in lst if x % 2 == 0]\nprint(squared)</code>", options: ["[4, 16]", "[1, 9, 25]", "[2, 4, 6, 8, 10]", "[1, 2, 3, 4, 5]"], answerIndex: 0, knowledge_points: "列表推導式", solution_idea: "只有偶數 2 和 4 被平方，得到 [4, 16]。" },
+      { question: "在 Python 中，下列哪個函數可以用來計算 list 中某個元素出現的次數？", options: ["count()", "counter()", "collections()", "index()"], answerIndex: 0, knowledge_points: "列表操作", solution_idea: "list 的 count() 方法可用於統計元素出現次數。" },
+      { question: "如果條件為 False，則 if-else 語句將執行哪一部分？", options: ["if 部分", "else 部分", "elif 部分", "不執行任何部分"], answerIndex: 1, knowledge_points: "流程控制", solution_idea: "當 if 條件為 False 時，將執行 else 部分（如果存在）。" },
+      { question: "在 Python 中，下列哪個語句可以用來將 list 中的元素反轉？", options: ["append()", "sort()", "reverse()", "pop()"], answerIndex: 2, knowledge_points: "列表操作", solution_idea: "lst.reverse() 會原地反轉列表中元素的順序。" },
+      { question: "在 Python 中，如何使用 else 條件語句？", options: ["else:", "else", "elseif", "elif"], answerIndex: 0, knowledge_points: "流程控制", solution_idea: "else 語句必須以 else: 形式寫出。" },
+      { question: "使用 matplotlib 顯示圖形的函數是？", options: ["plt.figure()", "plt.show()", "plt.draw()", "plt.display()"], answerIndex: 1, knowledge_points: "matplotlib 基本操作", solution_idea: "plt.show() 用於啟動圖形顯示窗口。" }
+    ];
+
+    // ================= 初賽：程式結果 / 簡答題 =================
+    const preliminaryText = [
+      { type: "text", question: "36. 程式結果題：<br><code>data = [\n  [1,1,2],\n  [2,3,4],\n  [3,5,6]\n]\nimport numpy as np\ndata = np.array(data)\nprint(data[:,0])</code><br>請寫出輸出結果。", answer: "[1 2 3]", knowledge_points: "<code>data[:,0]</code> 取得所有列的第 0 欄", solution_idea: "解析 numpy 陣列切片語法" },
+      { type: "text", question: "37. 程式結果題：<br><code>list = [\"apple\", \"banana\", \"orange\"]\nint = input(\"Which index you want to get? \")\nprint(list[int(int)])</code><br>假設用戶輸入 1，請寫出輸出結果。", answer: "banana", knowledge_points: "將輸入字串轉換為整數後作為索引", solution_idea: "索引 1 對應 'banana'" },
+      { type: "text", question: "38. 程式結果題：<br><code>score = input(\"What is your score? \")# 輸入 60\nif score >= 60:\n    print(\"Pass.\")\nelse:\n    print(\"Sorry.\")</code><br>請寫出執行結果。", answer: "Error", knowledge_points: "score 為字串，與數字比較會產生型別錯誤", solution_idea: "應先將 score 轉型為 int" },
+      { type: "text", question: "39. 程式結果題：<br><code>a = \"Hello Python version: \"\nb = 3.9\nprint(a + b)</code><br>請寫出執行結果。", answer: "Error", knowledge_points: "字串與數值不可直接相加", solution_idea: "會引發 TypeError" },
+      { type: "text", question: "40. 程式結果題：<br><code>L1 = [1,2,3,4,5]\nL2 = [x for x in L1]\nL1[0] = 99\nprint(L2)</code><br>請寫出輸出結果。", answer: "[1,2,3,4,5]", knowledge_points: "列表推導式產生新的列表，L1 的變更不影響 L2", solution_idea: "複製列表後修改不傳遞" },
+      { type: "text", question: "41. 程式結果題：<br><code>data = [\n  [1,2],\n  [3,4]\n]\nimport numpy as np\ndata = np.array(data)\nprint(data.reshape([1,4]))</code><br>請寫出輸出結果。", answer: "[[1 2 3 4]]", knowledge_points: "reshape([1,4]) 將 2x2 陣列轉為 1x4", solution_idea: "解析 numpy reshape 語法" },
+      { type: "text", question: "42. 程式結果題：<br><code>sample_list = [1,2,3,4,5,6]\nprint(sample_list[:])</code><br>請寫出輸出結果。", answer: "[1,2,3,4,5,6]", knowledge_points: "切片 [:] 取得整個列表", solution_idea: "直接返回原列表" },
+      { type: "text", question: "43. 程式結果題：<br><code>sample_list = [1,2,3,4,5,6,7,8,9,10]\nprint(sample_list[-3:])</code><br>請寫出輸出結果。", answer: "[8,9,10]", knowledge_points: "負索引切片取得最後 3 個元素", solution_idea: "解析列表切片語法" },
+      { type: "text", question: "44. 程式結果題：<br><code>import untangle\ndata = untangle.parse(\"<Weather><CurrentTemperature>23</CurrentTemperature></Weather>\")\nprint(data.Weather.CurrentTemperature.cdata)</code><br>請寫出輸出結果。", answer: "23", knowledge_points: "untangle 解析 XML 返回字串", solution_idea: "輸出為 '23'（字串形式）" },
+      { type: "text", question: "45. 程式結果題：<br><code>y, m, d = (\"2021\", \"3\", \"04\")\nprint(f\"{y}{m}{d}\")</code><br>請寫出輸出結果。", answer: "202134", knowledge_points: "字串直接拼接", solution_idea: "結果為 '2021'+'3'+'04' → 202134" },
+      { type: "text", question: "46. 程式結果題：<br><code>print(range(10,109,10))</code><br>請寫出執行結果。", answer: "range(10, 109, 10)", knowledge_points: "range() 返回 range 物件，不直接展開", solution_idea: "直接印出 range() 物件描述" },
+      { type: "text", question: "47. 程式結果題：<br><code>sample_list = [1,2,3,4,5,6]\nprint(sample_list[::-1])</code><br>請寫出輸出結果。", answer: "[6,5,4,3,2,1]", knowledge_points: "[::-1] 可反轉列表", solution_idea: "使用切片反轉順序" },
+      { type: "text", question: "48. 程式結果題：<br><code>cities = [\"Helsinki\", \"Calgary\", \"Kazan\"]\ncities.extend([\"London\", \"Seoul\"])\nprint(cities)</code><br>請寫出輸出結果。", answer: "[\"Helsinki\",\"Calgary\",\"Kazan\",\"London\",\"Seoul\"]", knowledge_points: "extend() 將另一列表元素加入原列表", solution_idea: "正確結果為合併後的列表" },
+      { type: "text", question: "49. 程式結果題：<br><code>sample_list = [1,2,3,4,5,6,7]\nsample_list.append([8,9,10])\nprint(sample_list)</code><br>請寫出輸出結果。", answer: "[1,2,3,4,5,6,7,[8,9,10]]", knowledge_points: "append() 將整個列表作為單一元素添加", solution_idea: "結果為原列表最後一項為一子列表" },
+      { type: "text", question: "50. 程式結果題：<br><code>y, m, d = [x.zfill(2) for x in (\"2020\", \"2\", \"07\")]\nprint(f\"{y}{m}{d}\")</code><br>請寫出輸出結果。", answer: "2020207", knowledge_points: "zfill(2) 保證字串至少兩位數", solution_idea: "將 '2' 轉換為 '02' 後拼接" },
+      { type: "text", question: "簡答題 1：有兩個列表 list1 和 list2，請簡述以下兩個語法的作用以及區別：<br><code>list1 + list2\nlist1.extend(list2)</code>", answer: "list1 + list2 操作會返回一個新的列表，其中包含 list1 和 list2 中的所有元素，而不改變原有列表；而 list1.extend(list2) 方法則是將 list2 的所有元素追加到 list1 的末尾，直接修改 list1，不會生成新列表。", knowledge_points: "列表操作、數據結構", solution_idea: "重點在於 '+' 運算符創建新列表，而 extend() 直接修改原列表。" },
+      { type: "text", question: "簡答題 2：假設你有一個人工智能聊天機械人的開發者 API 存取密鑰（API Key），調用的方法為 <code>response_message = chat(prompt, api_key)</code>，請設計一個 Python 程序，幫助用戶利用你的人工智能聊天軟件，將用戶提供的文字翻譯成繁體中文。", answer: "以下是一個示例程序：<br><code>def translate_to_traditional(text, api_key):\n    # 構造提示，要求翻譯為繁體中文\n    prompt = f\"請將以下文字翻譯成繁體中文：{text}\"\n    response_message = chat(prompt, api_key)\n    return response_message\n\n\nif __name__ == \"__main__\":\n    api_key = \"YOUR_API_KEY\"  # 請替換為實際 API Key\n    user_text = input(\"請輸入需要翻譯的文字：\")\n    translation = translate_to_traditional(user_text, api_key)\n    print(\"翻譯結果：\", translation)</code><br>該程序通過構造提示信息，調用 chat 函數獲取翻譯結果，並將結果返回。", knowledge_points: "API 調用、函數設計、字符串格式化", solution_idea: "核心在於利用 chat(prompt, api_key) 調用接口，將用戶文本翻譯成繁體中文。" }
+    ];
+
+    // ================= 決賽題庫 =================
+    const finalChoice = [
+      { question: "1. 請描述如何在 Python 中讀取檔案內容？", options: ["open()", "read()", "file()", "io()"], answerIndex: 0, knowledge_points: "open() 函數用於開啟檔案", solution_idea: "使用 open() 並搭配 read() 方法讀取檔案內容" }
+    ];
+    const finalText = [];
+
+    // 題庫總表
+    const QUESTION_BANKS = {
+      preliminary: { title: "初賽試卷", source: [...preliminaryChoice, ...preliminaryText] },
+      final:       { title: "決賽試卷", source: [...finalChoice, ...finalText] }
+    };
+  </script>
+
+  <!-- ============================================================
+       應用程式邏輯
+       ============================================================ -->
+  <script>
+    // ---------- 本地儲存鍵 ----------
+    const LS = {
+      theme: "pcp_theme",
+      bookmarks: "pcp_bookmarks",  // 收藏題目 ID 陣列
+      wrong: "pcp_wrong",          // 錯題 ID 陣列
+      progress: "pcp_progress"     // 未完成的作答進度
+    };
+
+    // ---------- 工具函式 ----------
+    const $ = (id) => document.getElementById(id);
+    const load = (key, fallback) => {
+      try { const v = localStorage.getItem(key); return v === null ? fallback : JSON.parse(v); }
+      catch { return fallback; }
+    };
+    const save = (key, val) => { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} };
+    const remove = (key) => { try { localStorage.removeItem(key); } catch {} };
+
+    function fmtTime(sec) {
+      const m = Math.floor(sec / 60).toString().padStart(2, "0");
+      const s = (sec % 60).toString().padStart(2, "0");
+      return `${m}:${s}`;
+    }
+    function shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+    // 清除題目字串前綴的題號（「12. 」「簡答題 2：」等），交由系統重新編號
+    function cleanQuestion(text) {
+      return text
+        .replace(/^\s*\d+\.\s*/, "")
+        .replace(/^\s*簡答題\s*\d+[：:]\s*/, "");
+    }
+    const isChoice = (q) => !q.type || q.type === "multiple";
+
+    // 為每個題庫的每一題建立穩定 ID（跨打亂仍可辨識，用於收藏 / 錯題）
+    function buildBanks() {
+      for (const [bankKey, bank] of Object.entries(QUESTION_BANKS)) {
+        bank.questions = bank.source.map((q, i) => ({
+          ...q,
+          _id: `${bankKey}-${i}`,
+          _bank: bankKey,
+          _isChoice: isChoice(q)
+        }));
+      }
+    }
+    buildBanks();
+
+    function findQuestionById(id) {
+      for (const bank of Object.values(QUESTION_BANKS)) {
+        const found = bank.questions.find((q) => q._id === id);
+        if (found) return found;
+      }
+      return null;
+    }
+
+    // ---------- 應用狀態 ----------
+    const state = {
+      examType: "preliminary",
+      mode: "all",
+      shuffle: true,
+      timeLimitSec: 0,
+      questions: [],          // 本次作答題目（題庫物件的參照）
+      answers: {},            // { _id: 選項index 或 文字 }
+      startTime: 0,
+      elapsed: 0,
+      timerInterval: null
+    };
+
+    let bookmarks = new Set(load(LS.bookmarks, []));
+    let wrongSet = new Set(load(LS.wrong, []));
+
+    // ---------- DOM ----------
+    const welcomeSection = $("welcomeSection");
+    const quizSection = $("quizSection");
+    const resultSection = $("resultSection");
+    const questionContainer = $("questionContainer");
+    const analysisContainer = $("analysisContainer");
+
+    // ============================================================
+    // 主題（深 / 淺色）
+    // ============================================================
+    function applyTheme(theme) {
+      document.documentElement.setAttribute("data-theme", theme);
+      $("themeBtn").textContent = theme === "dark" ? "☀️" : "🌙";
+      save(LS.theme, theme);
+    }
+    (function initTheme() {
+      const saved = load(LS.theme, null);
+      const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      applyTheme(saved || (prefersDark ? "dark" : "light"));
+    })();
+    $("themeBtn").addEventListener("click", () => {
+      const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+      applyTheme(next);
+    });
+
+    // ============================================================
+    // 首頁設定互動
+    // ============================================================
+    function bindSeg(segId, onChange) {
+      const seg = $(segId);
+      seg.querySelectorAll(".opt").forEach((opt) => {
+        opt.addEventListener("click", () => {
+          seg.querySelectorAll(".opt").forEach((o) => o.classList.remove("active"));
+          opt.classList.add("active");
+          opt.querySelector("input").checked = true;
+          onChange(opt.querySelector("input").value);
+        });
+      });
+    }
+    bindSeg("modeSeg", (v) => { state.mode = v; });
+    bindSeg("shuffleSeg", (v) => { state.shuffle = v === "1"; });
+
+    $("examTypeSelect").addEventListener("change", (e) => { state.examType = e.target.value; });
+    $("timeLimitSelect").addEventListener("change", (e) => {
+      state.timeLimitSec = parseInt(e.target.value, 10) * 60;
+    });
+
+    function refreshCounts() {
+      $("wrongCountSub").textContent = `錯題本：${wrongSet.size} 題`;
+      $("bmCountSub").textContent = `收藏：${bookmarks.size} 題`;
+    }
+    refreshCounts();
+
+    // ============================================================
+    // 依模式組裝題目
+    // ============================================================
+    function collectQuestions() {
+      const bank = QUESTION_BANKS[state.examType];
+      let pool;
+      switch (state.mode) {
+        case "choice":
+          pool = bank.questions.filter((q) => q._isChoice);
+          break;
+        case "text":
+          pool = bank.questions.filter((q) => !q._isChoice);
+          break;
+        case "wrong":
+          pool = bank.questions.filter((q) => wrongSet.has(q._id));
+          break;
+        case "bookmark":
+          pool = bank.questions.filter((q) => bookmarks.has(q._id));
+          break;
+        default:
+          pool = bank.questions.slice();
+      }
+      // 永遠在副本上操作，避免破壞原始題庫順序
+      pool = pool.slice();
+      if (state.shuffle) {
+        // 選擇題與非選擇題各自打亂，再讓選擇題在前
+        const choices = shuffle(pool.filter((q) => q._isChoice));
+        const texts = shuffle(pool.filter((q) => !q._isChoice));
+        pool = [...choices, ...texts];
+      }
+      return pool;
+    }
+
+    // ============================================================
+    // 開始作答
+    // ============================================================
+    function startQuiz(resume = false) {
+      if (!resume) {
+        state.questions = collectQuestions();
+        state.answers = {};
+        state.elapsed = 0;
+        if (state.questions.length === 0) {
+          alert("此模式目前沒有題目，請改選其他模式或試卷。");
+          return;
+        }
+      }
+
+      welcomeSection.classList.add("hidden");
+      resultSection.classList.add("hidden");
+      quizSection.classList.remove("hidden");
+
+      $("examTitle").textContent = QUESTION_BANKS[state.examType].title;
+      $("totalCount").textContent = state.questions.length;
+      $("timeWrap").classList.toggle("hidden", false);
+
+      renderQuestions();
+      updateProgress();
+
+      state.startTime = Date.now() - state.elapsed * 1000;
+      startTimer();
+      persistProgress();
+      window.scrollTo({ top: 0 });
+    }
+
+    function startTimer() {
+      if (state.timerInterval) clearInterval(state.timerInterval);
+      state.timerInterval = setInterval(() => {
+        state.elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+        if (state.timeLimitSec > 0) {
+          const remain = state.timeLimitSec - state.elapsed;
+          $("timeDisplay").textContent = fmtTime(Math.max(0, remain));
+          $("timeDisplay").parentElement.classList.toggle("danger", remain <= 60);
+          if (remain <= 0) {
+            alert("作答時間已到，系統將自動提交。");
+            showResult();
+            return;
+          }
+        } else {
+          $("timeDisplay").textContent = fmtTime(state.elapsed);
+        }
+        // 每 5 秒暫存一次進度
+        if (state.elapsed % 5 === 0) persistProgress();
+      }, 1000);
+    }
+    function stopTimer() {
+      if (state.timerInterval) { clearInterval(state.timerInterval); state.timerInterval = null; }
+    }
+
+    // ============================================================
+    // 渲染題目
+    // ============================================================
+    function questionTypeTag(q) {
+      if (q._isChoice) return "選擇題";
+      if (/簡答題/.test(q.question)) return "簡答題";
+      return "程式題";
+    }
+
+    function makeStarButton(q) {
+      const btn = document.createElement("button");
+      btn.className = "star-btn" + (bookmarks.has(q._id) ? " on" : "");
+      btn.title = "收藏此題";
+      btn.textContent = bookmarks.has(q._id) ? "★" : "☆";
+      btn.addEventListener("click", () => {
+        if (bookmarks.has(q._id)) { bookmarks.delete(q._id); btn.classList.remove("on"); btn.textContent = "☆"; }
+        else { bookmarks.add(q._id); btn.classList.add("on"); btn.textContent = "★"; }
+        save(LS.bookmarks, [...bookmarks]);
+        refreshCounts();
+      });
+      return btn;
+    }
+
+    function renderQuestions() {
+      questionContainer.innerHTML = "";
+      state.questions.forEach((q, idx) => {
+        const card = document.createElement("div");
+        card.className = "question-card";
+        card.id = `q-${idx}`;
+
+        // 標題列
+        const top = document.createElement("div");
+        top.className = "q-top";
+        const no = document.createElement("span");
+        no.className = "q-no";
+        no.textContent = idx + 1;
+        const qText = document.createElement("div");
+        qText.className = "q-text";
+        qText.innerHTML = `${cleanQuestion(q.question)} <span class="tag">${questionTypeTag(q)}</span>`;
+        top.appendChild(no);
+        top.appendChild(qText);
+        top.appendChild(makeStarButton(q));
+        card.appendChild(top);
+
+        // 內容
+        if (q._isChoice) {
+          const opts = document.createElement("div");
+          opts.className = "options";
+          q.options.forEach((opt, optIdx) => {
+            const id = `${q._id}__${optIdx}`;
+            const label = document.createElement("label");
+            label.className = "option";
+            label.htmlFor = id;
+            if (state.answers[q._id] === optIdx) label.classList.add("selected");
+
+            const input = document.createElement("input");
+            input.type = "radio";
+            input.name = q._id;
+            input.id = id;
+            input.checked = state.answers[q._id] === optIdx;
+            input.addEventListener("change", () => {
+              state.answers[q._id] = optIdx;
+              opts.querySelectorAll(".option").forEach((o) => o.classList.remove("selected"));
+              label.classList.add("selected");
+              updateProgress();
+              persistProgress();
+            });
+
+            const letter = document.createElement("span");
+            letter.className = "opt-letter";
+            letter.textContent = String.fromCharCode(65 + optIdx);
+            const txt = document.createElement("span");
+            txt.textContent = opt;
+
+            label.appendChild(input);
+            label.appendChild(letter);
+            label.appendChild(txt);
+            opts.appendChild(label);
+          });
+          card.appendChild(opts);
+        } else {
+          const ta = document.createElement("textarea");
+          ta.placeholder = "請在此輸入答案……";
+          ta.value = state.answers[q._id] || "";
+          ta.addEventListener("input", (e) => {
+            state.answers[q._id] = e.target.value;
+            updateProgress();
+          });
+          ta.addEventListener("blur", persistProgress);
+          card.appendChild(ta);
+        }
+
+        questionContainer.appendChild(card);
+      });
+    }
+
+    function isAnswered(q) {
+      const a = state.answers[q._id];
+      if (q._isChoice) return a !== undefined && a !== null;
+      return typeof a === "string" && a.trim().length > 0;
+    }
+
+    function updateProgress() {
+      const answered = state.questions.filter(isAnswered).length;
+      const total = state.questions.length;
+      $("answeredCount").textContent = answered;
+      $("progressFill").style.width = total ? `${(answered / total) * 100}%` : "0%";
+    }
+
+    // ============================================================
+    // 進度暫存 / 還原
+    // ============================================================
+    function persistProgress() {
+      if (quizSection.classList.contains("hidden")) return;
+      save(LS.progress, {
+        examType: state.examType,
+        mode: state.mode,
+        shuffle: state.shuffle,
+        timeLimitSec: state.timeLimitSec,
+        questionIds: state.questions.map((q) => q._id),
+        answers: state.answers,
+        elapsed: state.elapsed
+      });
+    }
+
+    function tryRestoreProgress() {
+      const p = load(LS.progress, null);
+      if (!p || !p.questionIds || p.questionIds.length === 0) return;
+      $("resumeNotice").classList.remove("hidden");
+
+      $("resumeBtn").onclick = () => {
+        const restored = p.questionIds.map(findQuestionById).filter(Boolean);
+        if (restored.length === 0) { remove(LS.progress); $("resumeNotice").classList.add("hidden"); return; }
+        state.examType = p.examType;
+        state.mode = p.mode;
+        state.shuffle = p.shuffle;
+        state.timeLimitSec = p.timeLimitSec;
+        state.questions = restored;
+        state.answers = p.answers || {};
+        state.elapsed = p.elapsed || 0;
+        startQuiz(true);
+      };
+      $("discardBtn").onclick = () => {
+        remove(LS.progress);
+        $("resumeNotice").classList.add("hidden");
+      };
+    }
+
+    // ============================================================
+    // 顯示結果與解析
+    // ============================================================
+    function showResult() {
+      stopTimer();
+      remove(LS.progress);
+
+      quizSection.classList.add("hidden");
+      resultSection.classList.remove("hidden");
+
+      let correctCount = 0, totalChoice = 0, textCount = 0;
+      const newWrong = [];
+
+      state.questions.forEach((q) => {
+        if (q._isChoice) {
+          totalChoice++;
+          if (state.answers[q._id] === q.answerIndex) {
+            correctCount++;
+            wrongSet.delete(q._id);          // 答對則移出錯題本
+          } else {
+            newWrong.push(q._id);            // 答錯（或未答）加入錯題本
+          }
+        } else {
+          textCount++;
+        }
+      });
+
+      // 更新錯題本
+      newWrong.forEach((id) => wrongSet.add(id));
+      save(LS.wrong, [...wrongSet]);
+      refreshCounts();
+
+      const percent = totalChoice ? Math.round((correctCount / totalChoice) * 100) : 0;
+      $("scorePercent").textContent = totalChoice ? percent : "—";
+      $("scoreRing").style.setProperty("--val", percent);
+      $("sumCorrect").textContent = correctCount;
+      $("sumTotalChoice").textContent = totalChoice;
+      $("sumText").textContent = textCount;
+      $("sumTime").textContent = fmtTime(state.elapsed);
+
+      renderAnalysis();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function renderAnalysis() {
+      analysisContainer.innerHTML = "";
+      state.questions.forEach((q, idx) => {
+        const card = document.createElement("div");
+        card.className = "question-card";
+
+        const top = document.createElement("div");
+        top.className = "q-top";
+        const no = document.createElement("span");
+        no.className = "q-no";
+        no.textContent = idx + 1;
+        const qText = document.createElement("div");
+        qText.className = "q-text";
+        qText.innerHTML = cleanQuestion(q.question);
+        top.appendChild(no);
+        top.appendChild(qText);
+        top.appendChild(makeStarButton(q));
+        card.appendChild(top);
+
+        if (q._isChoice) {
+          const userIdx = state.answers[q._id];
+          const answered = userIdx !== undefined && userIdx !== null;
+          const correct = userIdx === q.answerIndex;
+          card.classList.add(correct ? "is-correct" : "is-wrong");
+
+          const yourLine = document.createElement("p");
+          yourLine.className = "ans-line";
+          yourLine.innerHTML = `<strong>你的答案：</strong>`;
+          if (!answered) {
+            yourLine.innerHTML += `<span class="wrong-text">未作答</span><span class="badge skip">未答</span>`;
+          } else {
+            yourLine.innerHTML += `<span class="${correct ? "correct-text" : "wrong-text"}">${q.options[userIdx]}</span>` +
+              `<span class="badge ${correct ? "correct" : "wrong"}">${correct ? "正確" : "錯誤"}</span>`;
+          }
+          card.appendChild(yourLine);
+
+          const correctLine = document.createElement("p");
+          correctLine.className = "ans-line";
+          correctLine.innerHTML = `<strong>正確答案：</strong><span class="correct-text">${q.options[q.answerIndex]}</span>`;
+          card.appendChild(correctLine);
+        } else {
+          const userAns = (state.answers[q._id] || "").trim();
+          const yourLine = document.createElement("p");
+          yourLine.className = "ans-line";
+          yourLine.innerHTML = `<strong>你的答案：</strong>` +
+            (userAns ? escapeHtml(userAns) : `<span class="wrong-text">未作答</span>`) +
+            `<span class="badge review">參考解答</span>`;
+          card.appendChild(yourLine);
+
+          const refLine = document.createElement("p");
+          refLine.className = "ans-line";
+          refLine.innerHTML = `<strong>參考答案：</strong>${q.answer}`;
+          card.appendChild(refLine);
+        }
+
+        const box = document.createElement("div");
+        box.className = "analysis-box";
+        box.innerHTML =
+          `<p><strong>📌 知識點：</strong>${q.knowledge_points}</p>` +
+          `<p><strong>💡 解題思路：</strong>${q.solution_idea}</p>`;
+        card.appendChild(box);
+
+        analysisContainer.appendChild(card);
+      });
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement("div");
+      div.textContent = str;
+      return div.innerHTML.replace(/\n/g, "<br>");
+    }
+
+    // ============================================================
+    // 按鈕事件
+    // ============================================================
+    $("startBtn").addEventListener("click", () => startQuiz(false));
+
+    $("submitBtn").addEventListener("click", () => {
+      const unanswered = state.questions.filter((q) => !isAnswered(q)).length;
+      if (unanswered > 0 && !confirm(`尚有 ${unanswered} 題未作答，確定要提交嗎？`)) return;
+      showResult();
+    });
+
+    $("quitBtn").addEventListener("click", () => {
+      if (!confirm("放棄本次作答並返回首頁？目前進度會被清除。")) return;
+      stopTimer();
+      remove(LS.progress);
+      goHome();
+    });
+
+    $("backHomeBtn").addEventListener("click", goHome);
+
+    $("restartBtn").addEventListener("click", () => {
+      // 用相同題目重新作答
+      state.answers = {};
+      state.elapsed = 0;
+      startQuiz(true);
+    });
+
+    $("retryWrongBtn").addEventListener("click", () => {
+      const wrongQs = state.questions.filter((q) => q._isChoice && state.answers[q._id] !== q.answerIndex);
+      if (wrongQs.length === 0) { alert("本卷沒有答錯的選擇題，太棒了！🎉"); return; }
+      state.questions = wrongQs.slice();
+      state.answers = {};
+      state.elapsed = 0;
+      startQuiz(true);
+    });
+
+    function goHome() {
+      stopTimer();
+      quizSection.classList.add("hidden");
+      resultSection.classList.add("hidden");
+      welcomeSection.classList.remove("hidden");
+      refreshCounts();
+      tryRestoreProgress();
+      window.scrollTo({ top: 0 });
+    }
+
+    // ============================================================
+    // 回到頂部按鈕
+    // ============================================================
+    const fab = $("topFab");
+    fab.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+    window.addEventListener("scroll", () => {
+      fab.classList.toggle("show", window.scrollY > 400);
+    });
+
+    // 離開頁面前若仍在作答，暫存進度
+    window.addEventListener("beforeunload", () => {
+      if (!quizSection.classList.contains("hidden")) persistProgress();
+    });
+
+    // 啟動：檢查是否有未完成進度
+    tryRestoreProgress();
+  </script>
+</body>
+</html>
