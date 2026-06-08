@@ -1,0 +1,2336 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#2f6df6">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Python 模擬測試">
+  <meta name="format-detection" content="telephone=no">
+  <title>全澳中學生 Python 解難大賽 — 模擬測試系統 v2</title>
+  <style>
+    /* ============================================================
+       設計變數（支援深 / 淺色主題）
+       ============================================================ */
+    :root {
+      --bg: #f4f6fb;
+      --surface: #ffffff;
+      --surface-2: #f0f2f8;
+      --text: #1f2733;
+      --text-muted: #5c6675;
+      --border: #e1e5ee;
+      --primary: #2f6df6;
+      --primary-hover: #1d54d4;
+      --primary-soft: #e7f0ff;
+      --success: #1aa260;
+      --success-soft: #e3f7ec;
+      --danger: #e0413c;
+      --danger-soft: #fdecec;
+      --warning: #d98c00;
+      --code-bg: #f3f4f8;
+      --code-text: #b8255b;
+      --shadow: 0 2px 10px rgba(20, 30, 60, 0.06);
+      --shadow-lg: 0 10px 30px rgba(20, 30, 60, 0.12);
+      --radius: 14px;
+      --radius-sm: 9px;
+    }
+    [data-theme="dark"] {
+      --bg: #11151c;
+      --surface: #1a2029;
+      --surface-2: #232b37;
+      --text: #e7ecf3;
+      --text-muted: #9aa6b5;
+      --border: #2c3543;
+      --primary: #5b8dff;
+      --primary-hover: #769eff;
+      --primary-soft: #1d2a44;
+      --success: #3ad17e;
+      --success-soft: #16301f;
+      --danger: #ff6b66;
+      --danger-soft: #361a1a;
+      --warning: #ffb648;
+      --code-bg: #232b37;
+      --code-text: #ff8fb4;
+      --shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+      --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Segoe UI", Roboto, "PingFang TC", "Microsoft JhengHei", "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      min-height: 100vh;
+      transition: background 0.25s ease, color 0.25s ease;
+    }
+
+    /* ---------- 頂部導覽列 ---------- */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: linear-gradient(120deg, var(--primary), var(--primary-hover));
+      color: #fff;
+      box-shadow: var(--shadow);
+    }
+    .topbar-inner {
+      max-width: 920px;
+      margin: auto;
+      padding: 0.85rem 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .brand {
+      font-size: 1.12rem;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .brand .logo {
+      width: 30px; height: 30px;
+      background: rgba(255,255,255,0.18);
+      border-radius: 8px;
+      display: grid; place-items: center;
+      font-size: 1rem;
+    }
+    .icon-btn {
+      background: rgba(255,255,255,0.15);
+      border: none;
+      color: #fff;
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 1.15rem;
+      display: grid; place-items: center;
+      transition: background 0.2s;
+    }
+    .icon-btn:hover { background: rgba(255,255,255,0.3); }
+
+    .container { max-width: 920px; margin: auto; padding: 1.25rem 1.1rem 3rem; }
+
+    /* ---------- 卡片通用 ---------- */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      box-shadow: var(--shadow);
+    }
+    .card + .card { margin-top: 1rem; }
+    h1 { font-size: 1.5rem; margin-bottom: 0.4rem; }
+    h2 { font-size: 1.25rem; margin-bottom: 0.9rem; }
+    h3 { font-size: 1.05rem; margin-bottom: 0.6rem; }
+    .lead { color: var(--text-muted); margin-bottom: 1.1rem; }
+
+    /* ---------- 表單 ---------- */
+    .field { margin-bottom: 1.1rem; }
+    .field > label { display: block; font-weight: 600; margin-bottom: 0.45rem; }
+    select {
+      width: 100%;
+      padding: 0.7rem 0.8rem;
+      font-size: 1rem;
+      color: var(--text);
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+    }
+    select:focus { outline: 2px solid var(--primary); outline-offset: 1px; }
+
+    .seg {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .seg .opt {
+      flex: 1 1 auto;
+      min-width: 130px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      border-radius: var(--radius-sm);
+      padding: 0.6rem 0.7rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      user-select: none;
+    }
+    .seg .opt:hover { border-color: var(--primary); }
+    .seg .opt.active {
+      border-color: var(--primary);
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-weight: 600;
+    }
+    .seg .opt .sub { display:block; font-size: 0.78rem; color: var(--text-muted); font-weight: 400; }
+    .seg .opt.active .sub { color: var(--primary); }
+    .seg .opt input { display: none; }
+
+    /* ---------- 按鈕 ---------- */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      padding: 0.7rem 1.3rem;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.08s, background 0.2s, box-shadow 0.2s;
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-success:hover { filter: brightness(0.95); }
+    .btn-ghost {
+      background: var(--surface-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { border-color: var(--primary); color: var(--primary); }
+    .btn-block { width: 100%; }
+    .btn-lg { padding: 0.85rem 1.5rem; font-size: 1.08rem; }
+    .btn-row { display: flex; flex-wrap: wrap; gap: 0.7rem; }
+
+    /* ---------- 作答進度列 ---------- */
+    .quiz-head {
+      position: sticky;
+      top: 58px;
+      z-index: 40;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.9rem 1.1rem;
+      box-shadow: var(--shadow);
+      margin-bottom: 1rem;
+    }
+    .quiz-head .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .quiz-title { font-size: 1.1rem; font-weight: 700; }
+    .stats { display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.9rem; color: var(--text-muted); }
+    .stats b { color: var(--text); }
+    .stats .danger { color: var(--danger); }
+    .progress-track {
+      height: 8px;
+      background: var(--surface-2);
+      border-radius: 99px;
+      overflow: hidden;
+      margin-top: 0.8rem;
+    }
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--primary), var(--success));
+      border-radius: 99px;
+      transition: width 0.3s ease;
+    }
+
+    /* ---------- 題目卡片 ---------- */
+    .question-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.15rem 1.25rem;
+      margin-bottom: 1rem;
+      box-shadow: var(--shadow);
+      scroll-margin-top: 130px;
+    }
+    .q-top {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6rem;
+      margin-bottom: 0.85rem;
+    }
+    .q-no {
+      flex: 0 0 auto;
+      min-width: 2rem; height: 2rem;
+      padding: 0 0.5rem;
+      background: var(--primary-soft);
+      color: var(--primary);
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      display: grid; place-items: center;
+    }
+    .q-text { flex: 1; font-weight: 600; }
+    .q-text code, .q-text pre { font-weight: 400; }
+    .tag {
+      font-size: 0.72rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 99px;
+      background: var(--surface-2);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .star-btn {
+      flex: 0 0 auto;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.2rem;
+      color: var(--text-muted);
+      line-height: 1;
+      transition: transform 0.12s;
+    }
+    .star-btn:hover { transform: scale(1.2); }
+    .star-btn.on { color: #f5b301; }
+
+    /* 選項 */
+    .options { display: flex; flex-direction: column; gap: 0.5rem; }
+    .option {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0.65rem 0.8rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.15s;
+      background: var(--surface);
+    }
+    .option:hover { border-color: var(--primary); background: var(--surface-2); }
+    .option input { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; }
+    .option.selected { border-color: var(--primary); background: var(--primary-soft); }
+    .opt-letter { font-weight: 700; color: var(--text-muted); }
+
+    textarea {
+      width: 100%;
+      min-height: 110px;
+      padding: 0.7rem 0.8rem;
+      font-size: 0.98rem;
+      font-family: inherit;
+      color: var(--text);
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      resize: vertical;
+    }
+    textarea:focus { outline: 2px solid var(--primary); outline-offset: 1px; }
+
+    /* 程式碼樣式 */
+    code {
+      background: var(--code-bg);
+      color: var(--code-text);
+      padding: 0.1rem 0.35rem;
+      border-radius: 5px;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 0.9em;
+    }
+    .q-text code, .analysis-box code, .ans-line code { white-space: pre-wrap; }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.8rem 0.9rem;
+      overflow-x: auto;
+      margin: 0.5rem 0;
+    }
+    pre code { background: none; color: var(--text); padding: 0; }
+
+    /* ---------- 結果頁 ---------- */
+    .score-hero {
+      text-align: center;
+      padding: 1.5rem 1rem;
+    }
+    .score-ring {
+      --val: 0;
+      width: 150px; height: 150px;
+      margin: 0.5rem auto 1rem;
+      border-radius: 50%;
+      background:
+        radial-gradient(closest-side, var(--surface) 70%, transparent 71%),
+        conic-gradient(var(--primary) calc(var(--val) * 1%), var(--surface-2) 0);
+      display: grid; place-items: center;
+      position: relative;
+    }
+    .score-ring .num { font-size: 2.1rem; font-weight: 800; color: var(--primary); }
+    .score-ring .unit { font-size: 0.85rem; color: var(--text-muted); }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 0.8rem;
+      margin-top: 0.5rem;
+    }
+    .summary-grid .box {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.8rem;
+      text-align: center;
+    }
+    .summary-grid .box .n { font-size: 1.4rem; font-weight: 700; }
+    .summary-grid .box .l { font-size: 0.82rem; color: var(--text-muted); }
+
+    .analysis-box {
+      background: var(--surface-2);
+      border-left: 3px solid var(--primary);
+      border-radius: 8px;
+      padding: 0.7rem 0.9rem;
+      margin-top: 0.8rem;
+      font-size: 0.95rem;
+    }
+    .analysis-box p { margin: 0.15rem 0; }
+    .ans-line { margin: 0.5rem 0; }
+    .badge {
+      display: inline-block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 0.1rem 0.55rem;
+      border-radius: 99px;
+      margin-left: 0.3rem;
+    }
+    .badge.correct { background: var(--success-soft); color: var(--success); }
+    .badge.wrong { background: var(--danger-soft); color: var(--danger); }
+    .badge.skip { background: var(--surface-2); color: var(--text-muted); border: 1px solid var(--border); }
+    .badge.review { background: var(--primary-soft); color: var(--primary); }
+    .correct-text { color: var(--success); font-weight: 600; }
+    .wrong-text { color: var(--danger); font-weight: 600; }
+    .question-card.is-wrong { border-color: var(--danger); }
+    .question-card.is-correct { border-color: var(--success); }
+
+    /* ---------- 浮動回頂 ---------- */
+    .fab {
+      position: fixed;
+      right: 18px; bottom: 18px;
+      width: 46px; height: 46px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-size: 1.2rem;
+      box-shadow: var(--shadow-lg);
+      display: none;
+      z-index: 60;
+    }
+    .fab.show { display: grid; place-items: center; }
+
+    /* ---------- 提示 / 空狀態 ---------- */
+    .notice {
+      background: var(--primary-soft);
+      border: 1px solid var(--primary);
+      color: var(--text);
+      border-radius: var(--radius-sm);
+      padding: 0.8rem 1rem;
+      font-size: 0.92rem;
+      margin-bottom: 1rem;
+    }
+    .empty { text-align: center; color: var(--text-muted); padding: 2rem 1rem; }
+
+    /* ---------- 資料來源 ---------- */
+    .links { list-style: none; display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.8rem; }
+    .links li { padding-left: 1.1rem; position: relative; }
+    .links li::before { content: "🔗"; position: absolute; left: 0; font-size: 0.85rem; }
+    .links a { color: var(--primary); text-decoration: none; font-weight: 600; }
+    .links a:hover { text-decoration: underline; }
+    .src-note { font-size: 0.85rem; color: var(--text-muted); margin: 0; }
+
+    /* 屆數標籤 */
+    .tag.edition { background: var(--primary-soft); color: var(--primary); border-color: var(--primary); }
+
+    /* ---------- 小按鈕 / 排版 ---------- */
+    .btn-sm { padding: 0.35rem 0.7rem; font-size: 0.82rem; }
+    .row-between { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin-bottom: 0.9rem; }
+
+    /* ---------- 學習報告 ---------- */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+      gap: 0.7rem;
+      margin-bottom: 1rem;
+    }
+    .kpi {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.7rem 0.6rem;
+      text-align: center;
+    }
+    .kpi .n { font-size: 1.35rem; font-weight: 800; color: var(--primary); }
+    .kpi .l { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.1rem; }
+    .chart-wrap { margin-bottom: 1rem; }
+    .chart-title { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem; }
+    .bar-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 0.4rem;
+      height: 110px;
+      padding: 0.4rem 0.2rem 0;
+      border-bottom: 2px solid var(--border);
+    }
+    .bar-chart .bar {
+      flex: 1 1 0;
+      min-width: 10px;
+      background: linear-gradient(180deg, var(--primary), var(--primary-hover));
+      border-radius: 4px 4px 0 0;
+      position: relative;
+      transition: height 0.4s ease;
+      cursor: default;
+    }
+    .bar-chart .bar span {
+      position: absolute;
+      top: -1.1rem; left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .history-list { display: flex; flex-direction: column; gap: 0.45rem; }
+    .history-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.6rem;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.5rem 0.75rem;
+      font-size: 0.88rem;
+    }
+    .history-item .meta { color: var(--text-muted); font-size: 0.8rem; }
+    .history-item .pill {
+      font-weight: 700;
+      padding: 0.15rem 0.6rem;
+      border-radius: 99px;
+      background: var(--primary-soft);
+      color: var(--primary);
+    }
+    .history-item .pill.low { background: var(--danger-soft); color: var(--danger); }
+    .history-item .pill.mid { background: var(--surface); color: var(--warning); border: 1px solid var(--warning); }
+
+    /* ---------- 題目導航面板 ---------- */
+    .nav-palette {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(38px, 1fr));
+      gap: 0.4rem;
+      margin-top: 0.8rem;
+      padding-top: 0.8rem;
+      border-top: 1px solid var(--border);
+      max-height: 220px;
+      overflow-y: auto;
+    }
+    .nav-cell {
+      aspect-ratio: 1;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text-muted);
+      border-radius: 7px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: grid; place-items: center;
+      position: relative;
+      transition: transform 0.08s;
+    }
+    .nav-cell:hover { transform: scale(1.08); border-color: var(--primary); }
+    .nav-cell.answered { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .nav-cell.marked::after {
+      content: "";
+      position: absolute; top: 2px; right: 2px;
+      width: 7px; height: 7px;
+      background: var(--warning);
+      border-radius: 50%;
+    }
+    .nav-legend { display: flex; flex-wrap: wrap; gap: 0.8rem; font-size: 0.78rem; color: var(--text-muted); margin-top: 0.6rem; }
+    .nav-legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 0.25rem; }
+    .nav-legend .lg-ans { background: var(--primary); }
+    .nav-legend .lg-un { background: var(--surface-2); border: 1px solid var(--border); }
+    .nav-legend .lg-mk { background: var(--warning); border-radius: 50%; }
+
+    /* ---------- 標記本題 ---------- */
+    .flag-btn {
+      flex: 0 0 auto;
+      background: none; border: none; cursor: pointer;
+      font-size: 1.1rem; line-height: 1;
+      filter: grayscale(1) opacity(0.5);
+      transition: transform 0.12s, filter 0.2s;
+    }
+    .flag-btn:hover { transform: scale(1.2); }
+    .flag-btn.on { filter: none; }
+
+    /* ---------- 知識點分析 ---------- */
+    .kp-row { margin-bottom: 0.8rem; }
+    .kp-row .kp-head { display: flex; justify-content: space-between; gap: 0.6rem; font-size: 0.9rem; margin-bottom: 0.3rem; }
+    .kp-row .kp-head .pct { font-weight: 700; }
+    .kp-bar { height: 9px; background: var(--surface-2); border-radius: 99px; overflow: hidden; }
+    .kp-bar > i { display: block; height: 100%; border-radius: 99px; }
+    .kp-bar > i.good { background: var(--success); }
+    .kp-bar > i.mid { background: var(--warning); }
+    .kp-bar > i.bad { background: var(--danger); }
+
+    /* ---------- 背題 / 閃卡 ---------- */
+    .reveal-btn {
+      margin-top: 0.5rem;
+      background: var(--primary-soft);
+      color: var(--primary);
+      border: 1px dashed var(--primary);
+      border-radius: var(--radius-sm);
+      padding: 0.5rem 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+    }
+    .reveal-btn:hover { background: var(--primary); color: #fff; }
+    .study-opt {
+      padding: 0.5rem 0.8rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      margin-bottom: 0.4rem;
+      display: flex; gap: 0.6rem; align-items: center;
+    }
+    .study-opt.is-answer { border-color: var(--success); background: var(--success-soft); font-weight: 600; }
+    .study-opt .opt-letter { color: var(--text-muted); }
+    .study-opt.is-answer .opt-letter { color: var(--success); }
+
+    /* ---------- 題庫搜尋輸入 ---------- */
+    .search-input {
+      width: 100%;
+      margin-top: 0.8rem;
+      padding: 0.6rem 0.8rem;
+      font-size: 0.95rem;
+      color: var(--text);
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+    .search-input:focus { outline: 2px solid var(--primary); outline-offset: 1px; }
+    .search-hl { background: rgba(245, 179, 1, 0.35); border-radius: 3px; padding: 0 1px; }
+
+    /* ---------- 每日打卡 ---------- */
+    .checkin-strip { display: flex; gap: 0.3rem; flex-wrap: wrap; }
+    .checkin-strip .day {
+      flex: 1 1 0;
+      min-width: 26px;
+      aspect-ratio: 1;
+      border-radius: 7px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      display: grid; place-items: center;
+      font-size: 0.62rem;
+      color: var(--text-muted);
+      position: relative;
+    }
+    .checkin-strip .day.on {
+      background: linear-gradient(180deg, var(--success), #128a4f);
+      border-color: transparent;
+      color: #fff;
+    }
+    .checkin-strip .day.today { outline: 2px solid var(--primary); outline-offset: 1px; }
+    .badge-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(82px, 1fr));
+      gap: 0.6rem;
+    }
+    .badge-item {
+      text-align: center;
+      padding: 0.7rem 0.4rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface-2);
+      opacity: 0.5;
+      filter: grayscale(1);
+      transition: all 0.2s;
+    }
+    .badge-item.earned { opacity: 1; filter: none; border-color: var(--primary); background: var(--primary-soft); }
+    .badge-item .emoji { font-size: 1.5rem; line-height: 1.2; }
+    .badge-item .name { font-size: 0.74rem; font-weight: 700; margin-top: 0.2rem; }
+    .badge-item .desc { font-size: 0.66rem; color: var(--text-muted); margin-top: 0.1rem; }
+
+    .hidden { display: none !important; }
+
+    footer {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      padding: 1.5rem 1rem;
+    }
+
+    /* ---------- 無障礙：鍵盤聚焦樣式 ---------- */
+    :focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; border-radius: 4px; }
+    .option:focus-within { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-soft); }
+
+    /* ---------- 快捷鍵說明彈窗 ---------- */
+    .modal {
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(10, 14, 22, 0.55);
+      display: grid; place-items: center;
+      padding: 1rem;
+    }
+    .modal-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
+      max-width: 420px; width: 100%;
+      padding: 1.3rem;
+      max-height: 85vh; overflow-y: auto;
+    }
+    .modal-box h3 { display: flex; justify-content: space-between; align-items: center; }
+    .kbd-list { list-style: none; display: flex; flex-direction: column; gap: 0.45rem; margin-top: 0.6rem; }
+    .kbd-list li { display: flex; justify-content: space-between; gap: 1rem; align-items: center; font-size: 0.92rem; }
+    kbd {
+      font-family: inherit; font-size: 0.82rem; font-weight: 700;
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-bottom-width: 2px; border-radius: 6px;
+      padding: 0.1rem 0.5rem; color: var(--text); white-space: nowrap;
+    }
+
+    /* ============================================================
+       手機端適配
+       ============================================================ */
+    @media (max-width: 600px) {
+      body { -webkit-text-size-adjust: 100%; }
+      .topbar-inner { padding: 0.7rem 0.85rem; }
+      .brand { font-size: 1rem; }
+      .brand .logo { width: 26px; height: 26px; }
+      .container { padding: 0.85rem 0.8rem 4rem; }
+      .card { padding: 1rem; border-radius: 12px; }
+      h1 { font-size: 1.25rem; }
+      h2 { font-size: 1.15rem; }
+
+      /* 作答列改為直向、按鈕滿版好點擊 */
+      .quiz-head { top: 52px; padding: 0.75rem 0.85rem; }
+      .quiz-head .row { gap: 0.5rem; }
+      .stats { width: 100%; font-size: 0.82rem; gap: 0.7rem; align-items: center; }
+      .stats #navToggle { margin-left: auto; }
+
+      /* 區段選項一行兩個 */
+      .seg .opt { min-width: calc(50% - 0.25rem); flex-basis: calc(50% - 0.25rem); }
+
+      /* 主要操作按鈕在手機上滿版堆疊，加大觸控面積 */
+      .btn-row { flex-direction: column; }
+      .btn-row .btn { width: 100%; }
+      .btn { padding: 0.8rem 1.1rem; }
+      .stats .btn-sm, .row-between .btn-sm { width: auto; }
+
+      /* 選項與導航格加大觸控目標 */
+      .option { padding: 0.8rem; }
+      .nav-palette { grid-template-columns: repeat(auto-fill, minmax(34px, 1fr)); }
+      .nav-cell { font-size: 0.78rem; }
+
+      .summary-grid { grid-template-columns: repeat(2, 1fr); }
+      .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+      .score-ring { width: 130px; height: 130px; }
+    }
+
+    @media (max-width: 380px) {
+      .seg .opt { min-width: 100%; flex-basis: 100%; }
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* 觸控裝置移除 hover 放大造成的殘留效果 */
+    @media (hover: none) {
+      .nav-cell:hover, .star-btn:hover, .flag-btn:hover { transform: none; }
+    }
+
+    /* ============================================================
+       列印 / 存為 PDF（僅輸出成績與解析，隱藏互動元件）
+       ============================================================ */
+    @media print {
+      .topbar, .fab, footer, .btn, .btn-row, .quiz-head, .star-btn, .flag-btn,
+      #welcomeSection, #quizSection, #studySection, .modal { display: none !important; }
+      body { background: #fff; color: #000; }
+      .container { max-width: 100%; padding: 0; }
+      .card, .question-card { box-shadow: none; border-color: #bbb; break-inside: avoid; page-break-inside: avoid; }
+      .analysis-box { background: #f5f5f5; }
+      .score-ring { background: none !important; }
+      .score-ring .num { color: #000; }
+      a { color: #000; text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand"><span class="logo">🐍</span><span>Python 解難大賽 · 模擬測試</span></div>
+      <button id="helpBtn" class="icon-btn" title="鍵盤快捷鍵" aria-label="鍵盤快捷鍵說明">⌨</button>
+      <button id="themeBtn" class="icon-btn" title="切換深 / 淺色主題" aria-label="切換主題">🌙</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- ====================== 首頁 / 設定 ====================== -->
+    <section id="welcomeSection">
+      <div class="card">
+        <h1>歡迎使用模擬測試系統</h1>
+        <p class="lead">選擇試卷與練習模式，即可開始模擬作答。系統會自動記錄你的錯題與收藏，方便日後重練。</p>
+
+        <div id="resumeNotice" class="notice hidden">
+          📌 偵測到尚未完成的作答進度。
+          <div class="btn-row" style="margin-top:0.6rem;">
+            <button id="resumeBtn" class="btn btn-primary">繼續作答</button>
+            <button id="discardBtn" class="btn btn-ghost">捨棄並重新開始</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="examTypeSelect">試卷類型（賽段）</label>
+          <select id="examTypeSelect">
+            <option value="preliminary">初賽試卷</option>
+            <option value="final">決賽試卷</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="editionSelect">屆數</label>
+          <select id="editionSelect">
+            <!-- 依所選賽段動態填入可用屆數 -->
+          </select>
+        </div>
+
+        <div class="field">
+          <label>作答方式</label>
+          <div class="seg" id="activitySeg">
+            <label class="opt active"><input type="radio" name="activity" value="exam" checked>作答測驗<span class="sub">計分 + 計時</span></label>
+            <label class="opt"><input type="radio" name="activity" value="study">背題模式<span class="sub">閃卡式看答案複習</span></label>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>練習模式</label>
+          <div class="seg" id="modeSeg">
+            <label class="opt active"><input type="radio" name="mode" value="all" checked>全部題目<span class="sub">選擇題 + 程式 / 簡答</span></label>
+            <label class="opt"><input type="radio" name="mode" value="choice">只練選擇題<span class="sub">自動計分</span></label>
+            <label class="opt"><input type="radio" name="mode" value="text">只練程式 / 簡答<span class="sub">對照參考答案</span></label>
+            <label class="opt"><input type="radio" name="mode" value="wrong">錯題重練<span class="sub" id="wrongCountSub">錯題本：0 題</span></label>
+            <label class="opt"><input type="radio" name="mode" value="bookmark">我的收藏<span class="sub" id="bmCountSub">收藏：0 題</span></label>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="timeLimitSelect">作答時限</label>
+          <select id="timeLimitSelect">
+            <option value="0">不限時</option>
+            <option value="15">15 分鐘</option>
+            <option value="30">30 分鐘</option>
+            <option value="45">45 分鐘</option>
+            <option value="60">60 分鐘</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>題目順序</label>
+          <div class="seg" id="shuffleSeg">
+            <label class="opt active"><input type="radio" name="shuffle" value="1" checked>隨機打亂</label>
+            <label class="opt"><input type="radio" name="shuffle" value="0">依原順序</label>
+          </div>
+        </div>
+
+        <button id="startBtn" class="btn btn-primary btn-lg btn-block">開始作答 →</button>
+        <button id="browseBankBtn" class="btn btn-ghost btn-block" style="margin-top:0.6rem;">📖 瀏覽 / 搜尋題庫</button>
+      </div>
+
+      <!-- 每日打卡 + 成就徽章 -->
+      <div class="card" id="checkinCard">
+        <div class="row-between">
+          <h3 style="margin:0;">🔥 每日打卡</h3>
+          <button id="checkinBtn" class="btn btn-primary btn-sm">今日打卡</button>
+        </div>
+        <div class="kpi-grid" id="checkinKpi"></div>
+        <div class="chart-title" style="margin-bottom:0.4rem;">最近 14 天</div>
+        <div class="checkin-strip" id="checkinStrip"></div>
+        <div class="chart-title" style="margin:0.9rem 0 0.4rem;">成就徽章</div>
+        <div class="badge-grid" id="badgeGrid"></div>
+      </div>
+
+      <!-- 學習報告（有作答記錄時才顯示，由 JS 渲染） -->
+      <div class="card hidden" id="dashboardCard">
+        <div class="row-between">
+          <h3 style="margin:0;">📊 我的學習報告</h3>
+          <button id="clearHistoryBtn" class="btn btn-ghost btn-sm">清除記錄</button>
+        </div>
+        <div class="kpi-grid" id="kpiGrid"></div>
+        <div class="chart-wrap">
+          <div class="chart-title">最近成績趨勢（選擇題得分 %）</div>
+          <div class="bar-chart" id="scoreChart"></div>
+        </div>
+        <div class="history-list" id="historyList"></div>
+      </div>
+
+      <div class="card">
+        <h3>📚 資料來源與官方連結</h3>
+        <p class="lead" style="margin-bottom:0.7rem;">本題庫整理自澳門生產力暨科技轉移中心（CPTTM）「全澳中學生 Python 解難大賽」歷屆真題。官方未公開全部試卷，最新賽情與報名請以官網為準。</p>
+        <ul class="links">
+          <li><a href="https://www.cpttm.org.mo/ist/it-competitions/python-competition/" target="_blank" rel="noopener">CPTTM 官網 · 全澳中學生 Python 解難大賽</a></li>
+          <li><a href="https://events.cpttm.org.mo/competition/226?l=c" target="_blank" rel="noopener">第五屆報名頁（2025）</a></li>
+          <li><a href="https://www.cpttm.org.mo/ist/it-competitions/python-competition/3rd/" target="_blank" rel="noopener">第三屆比賽頁（含初賽真題 PDF）</a></li>
+          <li><a href="https://www.gov.mo/zh-hant/news/1151194/" target="_blank" rel="noopener">政府新聞稿 · 比賽圓滿舉行</a></li>
+        </ul>
+        <p class="src-note">初賽形式：60 分鐘、全卷 100 分、以 Python 3 為準。範圍涵蓋基礎語法、資料結構、檔案處理、list comprehension、lambda/map、生成器/迭代器、OOP 與 dunder methods、numpy / pandas / matplotlib、爬蟲與 XML 解析等。</p>
+      </div>
+    </section>
+
+    <!-- ====================== 作答中 ====================== -->
+    <section id="quizSection" class="hidden">
+      <div class="quiz-head">
+        <div class="row">
+          <span class="quiz-title" id="examTitle"></span>
+          <div class="stats">
+            <span>已答 <b id="answeredCount">0</b> / <b id="totalCount">0</b></span>
+            <span id="markWrap" class="hidden">標記 <b id="markedCount">0</b></span>
+            <span id="timeWrap">時間 <b id="timeDisplay">00:00</b></span>
+            <button id="navToggle" class="btn btn-ghost btn-sm" type="button">題目導航 ▾</button>
+          </div>
+        </div>
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="nav-palette hidden" id="navPalette"></div>
+      </div>
+
+      <div id="questionContainer"></div>
+
+      <div class="btn-row" style="margin-top:0.5rem;">
+        <button id="submitBtn" class="btn btn-success btn-lg">提交試卷</button>
+        <button id="quitBtn" class="btn btn-ghost">放棄並返回</button>
+      </div>
+    </section>
+
+    <!-- ====================== 背題模式 ====================== -->
+    <section id="studySection" class="hidden">
+      <div class="quiz-head">
+        <div class="row">
+          <span class="quiz-title" id="studyTitle"></span>
+          <div class="stats">
+            <span>顯示 <b id="studyCount">0</b> 題</span>
+            <button id="studyToggleAll" class="btn btn-ghost btn-sm" type="button">全部顯示答案</button>
+            <button id="studyExitBtn" class="btn btn-ghost btn-sm" type="button">返回首頁</button>
+          </div>
+        </div>
+        <input id="studySearch" class="search-input" type="search" placeholder="🔍 輸入關鍵字搜尋題目 / 選項 / 知識點……" autocomplete="off">
+      </div>
+      <div id="studyContainer"></div>
+      <div class="empty hidden" id="studyEmpty">找不到符合的題目，換個關鍵字試試。</div>
+      <button id="studyBackBtn" class="btn btn-ghost btn-block" style="margin-top:0.5rem;">返回首頁</button>
+    </section>
+
+    <!-- ====================== 結果 ====================== -->
+    <section id="resultSection" class="hidden">
+      <div class="card score-hero">
+        <h2 style="margin-bottom:0.2rem;">作答結果</h2>
+        <div class="score-ring" id="scoreRing">
+          <div>
+            <div class="num" id="scorePercent">0</div>
+            <div class="unit">選擇題得分 (%)</div>
+          </div>
+        </div>
+        <div class="summary-grid">
+          <div class="box"><div class="n" id="sumCorrect">0</div><div class="l">答對</div></div>
+          <div class="box"><div class="n" id="sumTotalChoice">0</div><div class="l">選擇題數</div></div>
+          <div class="box"><div class="n" id="sumText">0</div><div class="l">程式 / 簡答</div></div>
+          <div class="box"><div class="n" id="sumTime">00:00</div><div class="l">用時</div></div>
+        </div>
+        <div class="btn-row" style="justify-content:center; margin-top:1.1rem;">
+          <button id="retryWrongBtn" class="btn btn-primary">只重練錯題</button>
+          <button id="restartBtn" class="btn btn-ghost">重新作答本卷</button>
+          <button id="exportBtn" class="btn btn-ghost">匯出 / 分享成績</button>
+          <button id="printBtn" class="btn btn-ghost">列印 / 存為 PDF</button>
+          <button id="backHomeBtn" class="btn btn-ghost">返回首頁</button>
+        </div>
+      </div>
+
+      <div class="card hidden" id="kpCard">
+        <h3>🎯 知識點掌握分析</h3>
+        <p class="lead" style="margin-bottom:0.8rem;">依選擇題作答情況統計各知識點的正確率，優先複習掌握較弱的主題。</p>
+        <div id="kpContainer"></div>
+      </div>
+
+      <div class="card">
+        <h3>逐題解析</h3>
+        <p class="lead" style="margin-bottom:0.8rem;">以下列出所有題目的對錯、正確答案、知識點與解題思路。點擊星號可加入收藏。</p>
+        <div id="analysisContainer"></div>
+      </div>
+    </section>
+  </div>
+
+  <button id="topFab" class="fab" title="回到頂部" aria-label="回到頂部">↑</button>
+
+  <!-- 鍵盤快捷鍵說明 -->
+  <div id="shortcutModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="鍵盤快捷鍵">
+    <div class="modal-box">
+      <h3>⌨ 鍵盤快捷鍵 <button id="shortcutClose" class="icon-btn" style="background:var(--surface-2);color:var(--text);" aria-label="關閉">✕</button></h3>
+      <p class="lead" style="font-size:0.86rem;margin:0.3rem 0 0.2rem;">作答時可用鍵盤快速操作（游標在輸入框時除外）。</p>
+      <ul class="kbd-list">
+        <li><span>選擇目前題目的選項</span><span><kbd>1</kbd>～<kbd>9</kbd> / <kbd>A</kbd>～<kbd>I</kbd></span></li>
+        <li><span>下一題 / 上一題</span><span><kbd>J</kbd> / <kbd>K</kbd></span></li>
+        <li><span>標記目前題目</span><kbd>F</kbd></li>
+        <li><span>開合題目導航</span><kbd>M</kbd></li>
+        <li><span>提交試卷</span><span><kbd>Ctrl</kbd>+<kbd>Enter</kbd></span></li>
+        <li><span>背題模式：展開 / 收合全部</span><kbd>E</kbd></li>
+        <li><span>顯示 / 關閉本說明</span><span><kbd>?</kbd> / <kbd>Esc</kbd></span></li>
+      </ul>
+    </div>
+  </div>
+
+  <footer>
+    JacksonTai © 2025 · 題目來自<a href="https://www.cpttm.org.mo/ist/it-competitions/python-competition/" target="_blank" rel="noopener" style="color:inherit;">澳門生產力暨科技轉移中心</a> · 模擬測試系統 v2
+  </footer>
+
+  <!-- ============================================================
+       題庫資料
+       格式：
+         選擇題 { question, options[], answerIndex, knowledge_points, solution_idea }
+         非選擇題 { type:"text", question, answer, knowledge_points, solution_idea }
+       題目字串可保留原始題號 / 「簡答題 N：」前綴，系統會自動清除並重新編號。
+       ============================================================ -->
+  <script>
+    // ================= 初賽：選擇題 =================
+    const preliminaryChoice = [
+      { question: "1. 如何取得今日的日期 YYYY-MM-DD 格式？", options: ["datetime.date.today()", "datetime.datetime.today()", "datetime.now()", "date.today()"], answerIndex: 0, knowledge_points: "datetime.date.today() 返回格式為 YYYY-MM-DD", solution_idea: "選擇最直接返回日期的方法" },
+      { question: "2. 以下哪一個是 Python 註解寫法？", options: ["#", "//", "/* */", "<!-- -->"], answerIndex: 0, knowledge_points: "Python 使用 # 來作單行註解", solution_idea: "直接使用 #" },
+      { question: "3. Python 檔案一般以什麼 extension 結尾？", options: [".txt", ".html", ".py", ".js"], answerIndex: 2, knowledge_points: "Python 原始碼檔案副檔名為 .py", solution_idea: "選擇 .py 為正確答案" },
+      { question: "4. 假設在 numpy array L 中有 0-1 之間的小數，如何取得少於 0.2 的所有數字？", options: ["L[L < 0.2]", "L.filter(0.2)", "np.where(L < 0.2)", "L.find(0.2)"], answerIndex: 0, knowledge_points: "利用布林索引 L[L < 0.2] 可以過濾元素", solution_idea: "布林索引是 numpy 過濾數據的常用方法" },
+      { question: "5. 在 Python 中，iterator/generator 如何知道到達結尾？", options: ["By returning None", "By returning False", "By raising StopIteration", "By raising IndexError"], answerIndex: 2, knowledge_points: "當迭代完畢時會拋出 StopIteration 異常", solution_idea: "這是迭代器協議的一部分" },
+      { question: "6. 現要得出二次方數列，哪種寫法可行？", options: ["[x**2 for x in range(10)]", "list(map(lambda x:x**2, range(10)))", "[x*x for x in range(10)]", "以上皆可"], answerIndex: 1, knowledge_points: "使用 map 與 lambda 可得到二次方數列", solution_idea: "其他選項也正確，但題目標示正確答案為 map 寫法" },
+      { question: "7. 以下程式片段，寫入檔案後再讀取，印出結果為？<br><code>with open('/tmp/test.txt', 'w') as file_obj:\n    file_obj.write('A')\n    file_obj.write('B')\n    file_obj.write('C')\n    file_obj.write('D')\nwith open('/tmp/test.txt') as file_obj:\n    print(file_obj.read())</code>", options: ["A B C D", "ABCD", "A\nB\nC\nD", "Error"], answerIndex: 1, knowledge_points: "write() 寫入不會自動加入換行", solution_idea: "結果會連續寫入為 ABCD" },
+      { question: "8. 有一列表 emails，想以逗號分隔合併成字串，應執行？", options: ["str.join(emails)", '", ".join(emails)', "emails.join(', ')", "join(emails, ',')"], answerIndex: 1, knowledge_points: "使用 join() 方法合併列表字串", solution_idea: "正確語法為 \", \".join(emails)" },
+      { question: "9. 三個引號組成的一串代碼屬於？", options: ["Comment", "Documentation String (DocString)", "Multi-line string", "None"], answerIndex: 1, knowledge_points: "三引號通常用於撰寫 DocString", solution_idea: "這是 Python 的文件字串慣用法" },
+      { question: "10. Python 函數 hello 的 Doc String 存取方式？", options: ["hello.__doc__", "hello.doc()", "hello.comment", "hello.getDoc()"], answerIndex: 0, knowledge_points: "內建屬性 __doc__ 存取 DocString", solution_idea: "直接使用 hello.__doc__" },
+      { question: "11. 定義變量的方法？", options: ["var x = 123", "int x = 123", "x = 123", "x := 123"], answerIndex: 2, knowledge_points: "Python 中直接用 = 進行賦值", solution_idea: "直接 x = 123 為正確用法" },
+      { question: "12. 程式：<br><code>sample_list = list(range(10))\npower_ten = lambda x: x**10\nresult = [power_ten(x) for x in sample_list if power_ten(x) < 3000]\nprint(result)</code><br>輸出結果為？", options: ["[0,1]", "[0,1,1024,59049]", "[0, 1, 1024]", "Error"], answerIndex: 2, knowledge_points: "2^10=1024，3^10=59049 超過 3000", solution_idea: "只有 0, 1, 1024 小於 3000" },
+      { question: "13. import untangle 解析 XML \"<Weather>23</Weather>\", <code>type(data.Weather.cdata)</code>？", options: ["<class 'int'>", "<class 'xml'>", "<class 'list'>", "<class 'str'>"], answerIndex: 3, knowledge_points: "untangle 將 XML 內容解析為字串", solution_idea: "cdata 為字串型態" },
+      { question: "14. Python 建議縮排多少個空格？", options: ["2", "3", "4", "8"], answerIndex: 2, knowledge_points: "PEP 8 建議縮排 4 個空格", solution_idea: "4 個空格為標準縮排" },
+      { question: "15. List 和 Tuple 的分別是？", options: ["List 可以修改，Tuple 唯讀(不可改)", "List 唯讀，Tuple 可以修改", "兩者皆可修改", "兩者皆不可修改"], answerIndex: 0, knowledge_points: "List 為可變資料型別，Tuple 為不可變", solution_idea: "選擇正確描述可變與唯讀特性" },
+      { question: "16. Python 中，開啟文件並繼續寫入，應用哪種模式？", options: ["'r'", "'w'", "'a'", "'x'"], answerIndex: 2, knowledge_points: "'a' 模式用於追加內容", solution_idea: "選擇 append 模式" },
+      { question: "17. 爬取資料時，若想取得 <code>&lt;aside&gt;</code> 裡所有 <code>&lt;a&gt;</code> 連結，CSS 選擇器應填？", options: ["aside a", "aside > a", "aside:a", "a in aside"], answerIndex: 0, knowledge_points: "CSS 選擇器語法：後代選擇器", solution_idea: "使用 'aside a' 選取所有在 aside 裡的 a 元素" },
+      { question: "18. 預設只安裝官方套件，<code>import this</code> 輸出什麼？", options: ["一段說明文件", "錯誤訊息", "The Zen of Python 詩", "None"], answerIndex: 2, knowledge_points: "import this 會印出 The Zen of Python", solution_idea: "選擇正確描述詩的標題" },
+      { question: "19. 定義子類 ElectronicCar，基於父類 Car，語法？", options: ["class ElectronicCar(Car):", "class ElectronicCar extends Car:", "def ElectronicCar(Car):", "ElectronicCar = Car()"], answerIndex: 0, knowledge_points: "Python 中繼承使用括號指定父類", solution_idea: "正確語法為 class ElectronicCar(Car):" },
+      { question: "20. Generator 中，使用哪個指令產生下一個數值？", options: ["return value", "yield value", "next(value)", "send(value)"], answerIndex: 1, knowledge_points: "yield 用於生成器產出數值", solution_idea: "生成器中用 yield 產生下一個數值" },
+      { question: "21. Matplotlib 中的 right boundary (spine)？", options: ["border", "spine", "edge", "frame"], answerIndex: 1, knowledge_points: "透過 plt.gca().spines['right'] 可取得", solution_idea: "選擇正確的邊框屬性名稱" },
+      { question: "22. 若想自定義列印類別時輸出的字串，需要實作哪個 dunder method？", options: ["__str__", "__repr__", "__print__", "__format__"], answerIndex: 1, knowledge_points: "推薦實作 __repr__ 來獲得開發者友好輸出", solution_idea: "使用 __repr__ 定義類別的正式字串表示" },
+      { question: "23. Python 定義物件類別(Class)的關鍵字是？", options: ["class", "struct", "define", "object"], answerIndex: 0, knowledge_points: "使用關鍵字 class 定義類別", solution_idea: "正確語法為 class 類別名稱:" },
+      { question: "24. 下列何者是 Python 正確且建議的變量命名？", options: ["news_heading", "NewsHeading", "newHeading", "new_sh"], answerIndex: 0, knowledge_points: "慣用 snake_case 命名", solution_idea: "news_heading 為正確命名方式" },
+      { question: "25. Iterator 用哪個 dunder method 來決定下一個數值？", options: ["__iter__", "__prev__", "__next__", "__advance__"], answerIndex: 2, knowledge_points: "迭代器透過 __next__ 返回下一個元素", solution_idea: "直接使用 __next__" },
+      { question: "26. Python 定義函數的關鍵字是？", options: ["func", "def", "function", "lambda"], answerIndex: 1, knowledge_points: "使用 def 定義函數", solution_idea: "正確語法為 def 函數名稱(參數):" },
+      { question: "27. 用 with 語法時，內部會自動呼叫哪兩個 dunder method？", options: ["__enter__ 與 __exit__", "__init__ 與 __del__", "__start__ 與 __stop__", "__open__ 與 __close__"], answerIndex: 0, knowledge_points: "with 語法會自動調用 __enter__ 和 __exit__", solution_idea: "這兩個方法分別處理進入與退出上下文" },
+      { question: "28. 如何得出列表項目總數？", options: ["count()", "len(sample_list)", "size()", "sum()"], answerIndex: 1, knowledge_points: "len() 返回列表長度", solution_idea: "使用 len(列表) 得到項數" },
+      { question: "29. Python 中，Doc String 通常是以什麼格式出現？", options: ["\"\"\" ... \"\"\"", "''' ... '''", "/* ... */", "<!-- ... -->"], answerIndex: 1, knowledge_points: "DocString 常以三個單引號呈現", solution_idea: "選擇 ''' ... ''' 格式" },
+      { question: "30. Matplotlib 中的圖例顯示函數是哪一個？", options: ["plt.show()", "legend()", "plt.legend()", "plt.label()"], answerIndex: 2, knowledge_points: "plt.legend() 用於顯示圖例", solution_idea: "正確語法為 plt.legend()" },
+      { question: "31. 使用 open 開啟的文件對象，用完後是否需要 close？", options: ["需要，除非使用 with 自動關閉", "不需要", "取決於文件大小", "只有在寫入模式下需要"], answerIndex: 0, knowledge_points: "若不使用 with，則需手動關閉", solution_idea: "養成手動 close 或使用 with 語法的習慣" },
+      { question: "32. 要找出字串中 \"Python\" 出現了多少次，應執行？", options: ["str.find(\"Python\")", "sample_str.count(\"Python\")", "str.index(\"Python\")", "sample_str.search(\"Python\")"], answerIndex: 1, knowledge_points: "count() 返回指定子字串的出現次數", solution_idea: "使用 sample_str.count(\"Python\")" },
+      { question: "33. 關於 Python 的 List，下列哪個描述錯誤？", options: ["List 可修改", "List 第一格 Index 是 1", "List 支援切片操作", "List 可以存放不同型別資料"], answerIndex: 1, knowledge_points: "Python 中列表的索引從 0 開始", solution_idea: "正確描述應為第一格索引為 0" },
+      { question: "34. 自定義了一個新的數據類別(向量)，若想定義兩者相加用哪個 dunder method？", options: ["__sub__", "__mul__", "__add__", "__div__"], answerIndex: 2, knowledge_points: "定義加法運算使用 __add__", solution_idea: "在類別中實作 __add__ 方法即可" },
+      { question: "35. 對列表做隨機打亂，應用哪個？", options: ["random.choice()", "random.sample()", "random.sort()", "random.shuffle(sample_list)"], answerIndex: 3, knowledge_points: "random.shuffle() 可原地打亂列表", solution_idea: "選擇 random.shuffle() 為正確方法" },
+      { question: "如何使用 pandas DataFrame 進行數據排序？", options: ["df.sort_values()", "df.sort_index()", "df.order()", "df.sort()"], answerIndex: 0, knowledge_points: "pandas 基本操作", solution_idea: "pandas 提供 sort_values() 方法对 DataFrame 进行排序。" },
+      { question: "如何在 pandas DataFrame 中選擇一欄（Column）？", options: ["df.loc['column_name']", "df.iloc['column_name']", "df.at['column_name']", "df['column_name']"], answerIndex: 3, knowledge_points: "pandas 選擇數據", solution_idea: "使用 df['column_name'] 是選取單列數據的標準方法。" },
+      { question: "如何使用 pandas 將 DataFrame 寫入 CSV 文件？", options: ["df.to_csv()", "df.to_excel()", "df.to_table()", "df.to_sql()"], answerIndex: 0, knowledge_points: "pandas 文件操作", solution_idea: "DataFrame 的 to_csv() 方法可將數據寫入 CSV 文件。" },
+      { question: "在 Python 中，如何在列表末尾添加元素？", options: ["list.append(item)", "list.add(item)", "list.extend(item)", "list.insert(item)"], answerIndex: 0, knowledge_points: "列表操作", solution_idea: "append() 方法將元素附加到列表末尾，其他方法用途不同。" },
+      { question: "如何使用 pandas 創建一個 DataFrame？", options: ["pd.newDataFrame(data)", "pd.createDataFrame(data)", "pd.DataFrame(data)", "pd.createData(data)"], answerIndex: 2, knowledge_points: "pandas 基本操作", solution_idea: "正確寫法為使用 pd.DataFrame() 創建 DataFrame。" },
+      { question: "使用 numpy 求解矩陣的行列式的函數是？", options: ["np.linalg.eig()", "np.linalg.inv()", "np.linalg.det()", "np.linalg.solve()"], answerIndex: 2, knowledge_points: "numpy 線性代數", solution_idea: "np.linalg.det() 用於計算矩陣的行列式。" },
+      { question: "在 Python 中，要從 list 中刪除最後一個元素，可以使用哪個方法？", options: ["pop()", "remove()", "del()", "clear()"], answerIndex: 0, knowledge_points: "列表操作", solution_idea: "pop() 方法默認刪除並返回列表中的最後一個元素。" },
+      { question: "如何使用 numpy 生成範圍在 0 到 100 之間的 10 個均勻分布的數字？", options: ["np.arange(0, 100, 10)", "np.linspace(0, 100, 10)", "np.logspace(0, 100, 10)", "np.random.randint(0, 100, 10)"], answerIndex: 1, knowledge_points: "numpy 基本函數", solution_idea: "np.linspace() 用於生成指定範圍內均勻分布的數字。" },
+      { question: "在 Python 中，如何使用 list comprehension 生成 1 到 10 的平方值列表？", options: ["[i ** 2 for i in range(1, 11)]", "[i ** 2 for i in (1, 11)]", "[i ** 2 for i in range(1, 10)]", "A 和 B 都可以"], answerIndex: 0, knowledge_points: "列表推導式", solution_idea: "正確的寫法是利用 range(1,11) 遍歷 1 到 10 並取平方，選項 B 寫法不正確。" },
+      { question: "在 Python 中，如何使用 break 語句？", options: ["break()", "break", "exit", "stop"], answerIndex: 1, knowledge_points: "流程控制", solution_idea: "break 是一個關鍵字，用於退出循環，不需要括號。" },
+      { question: "如何使用 numpy 創建一個全零矩陣？", options: ["np.full(shape, 0)", "np.ones(shape)", "np.empty(shape)", "np.zeros(shape)"], answerIndex: 3, knowledge_points: "numpy 數組創建", solution_idea: "np.zeros() 函數根據給定形狀創建全 0 的數組。" },
+      { question: "如何計算 numpy 數組中的元素總和？", options: ["np.mean(array)", "np.prod(array)", "np.cumsum(array)", "np.sum(array)"], answerIndex: 3, knowledge_points: "numpy 基本運算", solution_idea: "np.sum() 用於計算數組所有元素的總和。" },
+      { question: "Tuple 的初始化可以使用哪個符號？", options: ["{}", "[]", "()", "<>"], answerIndex: 2, knowledge_points: "數據結構", solution_idea: "元組用圓括號 () 來表示。" },
+      { question: "如何在 pandas DataFrame 中應用自定義函數？", options: ["df.map(function)", "df.apply(function)", "df.applymap(function)", "df.transform(function)"], answerIndex: 1, knowledge_points: "pandas 數據處理", solution_idea: "對於列級操作，使用 df.apply(function) 是常見做法。" },
+      { question: "在 Python 中，如何使用 while 迴圈？", options: ["while(condition)", "while condition:", "while condition, do:", "while condition do:"], answerIndex: 1, knowledge_points: "流程控制", solution_idea: "while 迴圈的正確語法為 while condition: 後跟縮排的程式碼塊。" },
+      { question: "如何在 Python 中查找一個 tuple 或 list 中的最大值？", options: ["len(tuple_or_list)", "tuple_or_list.max()", "max(tuple_or_list)", "tuple_or_list[-1]"], answerIndex: 2, knowledge_points: "內建函數", solution_idea: "內置函數 max() 可用於查找序列中的最大值。" },
+      { question: "在 Python 中，下列哪個函數可以用來計算 list 中的中位數？", options: ["median()", "mean()", "mode()", "max()"], answerIndex: 0, knowledge_points: "統計函數", solution_idea: "在 statistics 模組中提供 median() 用於計算中位數。" },
+      { question: "下列 Python 代碼的輸出結果是什麼？<br><code>import pandas as pd\ndata = {'name': ['Alice', 'Bob', 'Charlie'], 'age': [25, 30, 35]}\ndf = pd.DataFrame(data)\nprint(df.loc[df['age'] > 30]['name'])</code>", options: ["Alice, Bob, Charlie", "Bob, Charlie", "Charlie", "Error"], answerIndex: 2, knowledge_points: "pandas 資料篩選", solution_idea: "篩選條件 df['age'] > 30 只匹配到年齡 35 的那一行，即 'Charlie'。" },
+      { question: "下列 Python 代碼的輸出圖像類型是什麼？<br><code>import matplotlib.pyplot as plt\nx = [1, 2, 3, 4, 5]\ny = [2, 4, 6, 8, 10]\nplt.plot(x, y)\nplt.show()</code>", options: ["A bar chart", "A line chart", "A scatter plot", "A pie chart"], answerIndex: 1, knowledge_points: "matplotlib 基本繪圖", solution_idea: "plt.plot() 默認繪製折線圖。" },
+      { question: "在 numpy 中，下列哪個函數可以用來計算 list 中的標準差？", options: ["mean()", "var()", "sum()", "std()"], answerIndex: 3, knowledge_points: "numpy 統計函數", solution_idea: "np.std() 用於計算數組的標準差。" },
+      { question: "在 Matplotlib 中，以下哪個函數用於在圖形中添加一個文本框，用於顯示注釋或說明？", options: ["plot()", "scatter()", "text()", "annotate()"], answerIndex: 3, knowledge_points: "matplotlib 圖形標註", solution_idea: "annotate() 可用來在圖中添加帶箭頭的文本標註。" },
+      { question: "如何在 Python 中創建變量？", options: ["var = value", "var := value", "var(value)", "var -> value"], answerIndex: 0, knowledge_points: "Python 變量賦值", solution_idea: "直接使用賦值語句 var = value 來創建變量。" },
+      { question: "在 Python 中，如何創建一個空字典？", options: ["my_dict = {}", "my_dict = dict()", "兩者皆正確", "兩者皆不正確"], answerIndex: 2, knowledge_points: "Python 基本數據類型", solution_idea: "{} 和 dict() 都能創建空字典。" },
+      { question: "下列 Python 代碼的輸出結果是什麼？<br><code>import numpy as np\na = np.array([1, 2, 3])\nb = np.array([4, 5, 6])\nc = a + b\nprint(c)</code>", options: ["[1, 2, 3, 4, 5, 6]", "[5, 7, 9]", "[4, 5, 6]", "[1, 4, 9]"], answerIndex: 1, knowledge_points: "numpy 數組運算", solution_idea: "兩個數組逐元素相加：1+4, 2+5, 3+6 得到 [5, 7, 9]。" },
+      { question: "如何創建一個 3x3 的 numpy 數組，並將所有元素初始化為 0？", options: ["np.zeros((3, 3))", "np.ones((3, 3))", "np.empty((3, 3))", "np.array([(0, 0, 0), (0, 0, 0), (0, 0, 0)])"], answerIndex: 0, knowledge_points: "numpy 數組創建", solution_idea: "np.zeros((3,3)) 直接生成 3x3 全 0 數組。" },
+      { question: "使用 matplotlib 儲存圖形的函數是？", options: ["plt.save()", "plt.savefig()", "plt.export()", "plt.store()"], answerIndex: 1, knowledge_points: "matplotlib 文件輸出", solution_idea: "plt.savefig() 用於將當前圖形保存到文件中。" },
+      { question: "在 Python 中，如何使用 if 條件語句？", options: ["if(condition)", "if condition:", "if condition then:", "if condition, then:"], answerIndex: 1, knowledge_points: "Python 條件語句", solution_idea: "正確語法為 if condition: 後跟縮排代碼塊。" },
+      { question: "如何在 Python 中反轉一個 list？", options: ["reversed(lst)", "lst.reverse()", "lst = lst.reverse()", "B 和 C 都可以"], answerIndex: 0, knowledge_points: "列表操作", solution_idea: "reversed(lst) 返回一個反轉的迭代器，比直接調用 lst.reverse() 更靈活。" },
+      { question: "在 Python 中，下列哪個語句可以用來將 list 中的元素轉換為 set？", options: ["set()", "list()", "tuple()", "dict()"], answerIndex: 0, knowledge_points: "數據類型轉換", solution_idea: "直接使用 set() 可將列表轉換為集合。" },
+      { question: "下列 Python 代碼的輸出結果是什麼？<br><code>import pandas as pd\ndata = {'name': ['Alice', 'Bob', 'Charlie'], 'age': [25, 30, 35]}\ndf = pd.DataFrame(data)\nprint(df['name'])</code>", options: ["[25, 30, 35]", "name", "Alice, Bob, Charlie", "Error"], answerIndex: 2, knowledge_points: "pandas 資料選取", solution_idea: "df['name'] 提取 name 列並返回一個 pandas Series，內容為三個名字。" },
+      { question: "在 Python 中，下列哪個函數可以用來計算 list 中元素的總和？", options: ["count()", "len()", "max()", "sum()"], answerIndex: 3, knowledge_points: "內建函數", solution_idea: "內置函數 sum() 用於對可迭代對象求和。" },
+      { question: "在 Python 中，下列哪一個語句可以用來建立一個空的 list？", options: ["list()", "[]", "()", "{}"], answerIndex: 1, knowledge_points: "數據類型創建", solution_idea: "最常用且直觀的方式是使用 [] 來創建空列表。" },
+      { question: "在 numpy 中，下列哪個函數可以用來計算 list 中的平均值？", options: ["avg()", "sum()", "mean()", "average()"], answerIndex: 2, knowledge_points: "numpy 統計函數", solution_idea: "np.mean() 用於計算數組的平均值。" },
+      { question: "如在 for loop 中使用 continue 的意義是？", options: ["跳過當前迴圈，並繼續執行後面的程式碼", "跳過當前迴圈的剩餘部分，並立即開始下一次迴圈", "重新開始迴圈", "立即停止迴圈並跳出迴圈"], answerIndex: 1, knowledge_points: "流程控制", solution_idea: "continue 語句會結束本次迴圈剩餘部分，直接進入下一次迭代。" },
+      { question: "下列 Python 代碼的輸出結果是什麼？<br><code>lst = [1, 2, 3, 4, 5]\nsquared = [x**2 for x in lst if x % 2 == 0]\nprint(squared)</code>", options: ["[4, 16]", "[1, 9, 25]", "[2, 4, 6, 8, 10]", "[1, 2, 3, 4, 5]"], answerIndex: 0, knowledge_points: "列表推導式", solution_idea: "只有偶數 2 和 4 被平方，得到 [4, 16]。" },
+      { question: "在 Python 中，下列哪個函數可以用來計算 list 中某個元素出現的次數？", options: ["count()", "counter()", "collections()", "index()"], answerIndex: 0, knowledge_points: "列表操作", solution_idea: "list 的 count() 方法可用於統計元素出現次數。" },
+      { question: "如果條件為 False，則 if-else 語句將執行哪一部分？", options: ["if 部分", "else 部分", "elif 部分", "不執行任何部分"], answerIndex: 1, knowledge_points: "流程控制", solution_idea: "當 if 條件為 False 時，將執行 else 部分（如果存在）。" },
+      { question: "在 Python 中，下列哪個語句可以用來將 list 中的元素反轉？", options: ["append()", "sort()", "reverse()", "pop()"], answerIndex: 2, knowledge_points: "列表操作", solution_idea: "lst.reverse() 會原地反轉列表中元素的順序。" },
+      { question: "在 Python 中，如何使用 else 條件語句？", options: ["else:", "else", "elseif", "elif"], answerIndex: 0, knowledge_points: "流程控制", solution_idea: "else 語句必須以 else: 形式寫出。" },
+      { question: "使用 matplotlib 顯示圖形的函數是？", options: ["plt.figure()", "plt.show()", "plt.draw()", "plt.display()"], answerIndex: 1, knowledge_points: "matplotlib 基本操作", solution_idea: "plt.show() 用於啟動圖形顯示窗口。" }
+    ];
+
+    // ================= 初賽：程式結果 / 簡答題 =================
+    const preliminaryText = [
+      { type: "text", question: "36. 程式結果題：<br><code>data = [\n  [1,1,2],\n  [2,3,4],\n  [3,5,6]\n]\nimport numpy as np\ndata = np.array(data)\nprint(data[:,0])</code><br>請寫出輸出結果。", answer: "[1 2 3]", knowledge_points: "<code>data[:,0]</code> 取得所有列的第 0 欄", solution_idea: "解析 numpy 陣列切片語法" },
+      { type: "text", question: "37. 程式結果題：<br><code>list = [\"apple\", \"banana\", \"orange\"]\nint = input(\"Which index you want to get? \")\nprint(list[int(int)])</code><br>假設用戶輸入 1，請寫出輸出結果。", answer: "banana", knowledge_points: "將輸入字串轉換為整數後作為索引", solution_idea: "索引 1 對應 'banana'" },
+      { type: "text", question: "38. 程式結果題：<br><code>score = input(\"What is your score? \")# 輸入 60\nif score >= 60:\n    print(\"Pass.\")\nelse:\n    print(\"Sorry.\")</code><br>請寫出執行結果。", answer: "Error", knowledge_points: "score 為字串，與數字比較會產生型別錯誤", solution_idea: "應先將 score 轉型為 int" },
+      { type: "text", question: "39. 程式結果題：<br><code>a = \"Hello Python version: \"\nb = 3.9\nprint(a + b)</code><br>請寫出執行結果。", answer: "Error", knowledge_points: "字串與數值不可直接相加", solution_idea: "會引發 TypeError" },
+      { type: "text", question: "40. 程式結果題：<br><code>L1 = [1,2,3,4,5]\nL2 = [x for x in L1]\nL1[0] = 99\nprint(L2)</code><br>請寫出輸出結果。", answer: "[1,2,3,4,5]", knowledge_points: "列表推導式產生新的列表，L1 的變更不影響 L2", solution_idea: "複製列表後修改不傳遞" },
+      { type: "text", question: "41. 程式結果題：<br><code>data = [\n  [1,2],\n  [3,4]\n]\nimport numpy as np\ndata = np.array(data)\nprint(data.reshape([1,4]))</code><br>請寫出輸出結果。", answer: "[[1 2 3 4]]", knowledge_points: "reshape([1,4]) 將 2x2 陣列轉為 1x4", solution_idea: "解析 numpy reshape 語法" },
+      { type: "text", question: "42. 程式結果題：<br><code>sample_list = [1,2,3,4,5,6]\nprint(sample_list[:])</code><br>請寫出輸出結果。", answer: "[1,2,3,4,5,6]", knowledge_points: "切片 [:] 取得整個列表", solution_idea: "直接返回原列表" },
+      { type: "text", question: "43. 程式結果題：<br><code>sample_list = [1,2,3,4,5,6,7,8,9,10]\nprint(sample_list[-3:])</code><br>請寫出輸出結果。", answer: "[8,9,10]", knowledge_points: "負索引切片取得最後 3 個元素", solution_idea: "解析列表切片語法" },
+      { type: "text", question: "44. 程式結果題：<br><code>import untangle\ndata = untangle.parse(\"<Weather><CurrentTemperature>23</CurrentTemperature></Weather>\")\nprint(data.Weather.CurrentTemperature.cdata)</code><br>請寫出輸出結果。", answer: "23", knowledge_points: "untangle 解析 XML 返回字串", solution_idea: "輸出為 '23'（字串形式）" },
+      { type: "text", question: "45. 程式結果題：<br><code>y, m, d = (\"2021\", \"3\", \"04\")\nprint(f\"{y}{m}{d}\")</code><br>請寫出輸出結果。", answer: "202134", knowledge_points: "字串直接拼接", solution_idea: "結果為 '2021'+'3'+'04' → 202134" },
+      { type: "text", question: "46. 程式結果題：<br><code>print(range(10,109,10))</code><br>請寫出執行結果。", answer: "range(10, 109, 10)", knowledge_points: "range() 返回 range 物件，不直接展開", solution_idea: "直接印出 range() 物件描述" },
+      { type: "text", question: "47. 程式結果題：<br><code>sample_list = [1,2,3,4,5,6]\nprint(sample_list[::-1])</code><br>請寫出輸出結果。", answer: "[6,5,4,3,2,1]", knowledge_points: "[::-1] 可反轉列表", solution_idea: "使用切片反轉順序" },
+      { type: "text", question: "48. 程式結果題：<br><code>cities = [\"Helsinki\", \"Calgary\", \"Kazan\"]\ncities.extend([\"London\", \"Seoul\"])\nprint(cities)</code><br>請寫出輸出結果。", answer: "[\"Helsinki\",\"Calgary\",\"Kazan\",\"London\",\"Seoul\"]", knowledge_points: "extend() 將另一列表元素加入原列表", solution_idea: "正確結果為合併後的列表" },
+      { type: "text", question: "49. 程式結果題：<br><code>sample_list = [1,2,3,4,5,6,7]\nsample_list.append([8,9,10])\nprint(sample_list)</code><br>請寫出輸出結果。", answer: "[1,2,3,4,5,6,7,[8,9,10]]", knowledge_points: "append() 將整個列表作為單一元素添加", solution_idea: "結果為原列表最後一項為一子列表" },
+      { type: "text", question: "50. 程式結果題：<br><code>y, m, d = [x.zfill(2) for x in (\"2020\", \"2\", \"07\")]\nprint(f\"{y}{m}{d}\")</code><br>請寫出輸出結果。", answer: "2020207", knowledge_points: "zfill(2) 保證字串至少兩位數", solution_idea: "將 '2' 轉換為 '02' 後拼接" },
+      { type: "text", question: "簡答題 1：有兩個列表 list1 和 list2，請簡述以下兩個語法的作用以及區別：<br><code>list1 + list2\nlist1.extend(list2)</code>", answer: "list1 + list2 操作會返回一個新的列表，其中包含 list1 和 list2 中的所有元素，而不改變原有列表；而 list1.extend(list2) 方法則是將 list2 的所有元素追加到 list1 的末尾，直接修改 list1，不會生成新列表。", knowledge_points: "列表操作、數據結構", solution_idea: "重點在於 '+' 運算符創建新列表，而 extend() 直接修改原列表。" },
+      { type: "text", question: "簡答題 2：假設你有一個人工智能聊天機械人的開發者 API 存取密鑰（API Key），調用的方法為 <code>response_message = chat(prompt, api_key)</code>，請設計一個 Python 程序，幫助用戶利用你的人工智能聊天軟件，將用戶提供的文字翻譯成繁體中文。", answer: "以下是一個示例程序：<br><code>def translate_to_traditional(text, api_key):\n    # 構造提示，要求翻譯為繁體中文\n    prompt = f\"請將以下文字翻譯成繁體中文：{text}\"\n    response_message = chat(prompt, api_key)\n    return response_message\n\n\nif __name__ == \"__main__\":\n    api_key = \"YOUR_API_KEY\"  # 請替換為實際 API Key\n    user_text = input(\"請輸入需要翻譯的文字：\")\n    translation = translate_to_traditional(user_text, api_key)\n    print(\"翻譯結果：\", translation)</code><br>該程序通過構造提示信息，調用 chat 函數獲取翻譯結果，並將結果返回。", knowledge_points: "API 調用、函數設計、字符串格式化", solution_idea: "核心在於利用 chat(prompt, api_key) 調用接口，將用戶文本翻譯成繁體中文。" }
+    ];
+
+    // ================= 決賽題庫 =================
+    const finalChoice = [
+      { question: "1. 請描述如何在 Python 中讀取檔案內容？", options: ["open()", "read()", "file()", "io()"], answerIndex: 0, knowledge_points: "open() 函數用於開啟檔案", solution_idea: "使用 open() 並搭配 read() 方法讀取檔案內容" }
+    ];
+    const finalText = [];
+
+    // 未標註屆數的題目所使用的預設屆數標籤
+    const DEFAULT_EDITION = "歷屆綜合題";
+
+    /**
+     * 題庫總表
+     * 每個賽段（初賽 / 決賽）含一個 source 陣列。
+     * 若要新增某一屆的題目，只需在題目物件加上 edition 欄位，例如：
+     *   { edition: "第四屆", question: "...", options: [...], answerIndex: 0, ... }
+     * 未標 edition 的題目會自動歸入 DEFAULT_EDITION，並出現在「全部屆數」中。
+     */
+    const QUESTION_BANKS = {
+      preliminary: { title: "初賽試卷", stage: "初賽", source: [...preliminaryChoice, ...preliminaryText] },
+      final:       { title: "決賽試卷", stage: "決賽", source: [...finalChoice, ...finalText] }
+    };
+  </script>
+
+  <!-- ============================================================
+       應用程式邏輯
+       ============================================================ -->
+  <script>
+    // ---------- 本地儲存鍵 ----------
+    const LS = {
+      theme: "pcp_theme",
+      bookmarks: "pcp_bookmarks",  // 收藏題目 ID 陣列
+      wrong: "pcp_wrong",          // 錯題 ID 陣列
+      progress: "pcp_progress",    // 未完成的作答進度
+      history: "pcp_history",      // 歷次完成記錄
+      checkin: "pcp_checkin"       // 每日打卡日期（YYYY-M-D 陣列）
+    };
+    const HISTORY_MAX = 50;        // 最多保留的歷史記錄筆數
+
+    // ---------- 工具函式 ----------
+    const $ = (id) => document.getElementById(id);
+    const load = (key, fallback) => {
+      try { const v = localStorage.getItem(key); return v === null ? fallback : JSON.parse(v); }
+      catch { return fallback; }
+    };
+    const save = (key, val) => { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} };
+    const remove = (key) => { try { localStorage.removeItem(key); } catch {} };
+
+    function fmtTime(sec) {
+      const m = Math.floor(sec / 60).toString().padStart(2, "0");
+      const s = (sec % 60).toString().padStart(2, "0");
+      return `${m}:${s}`;
+    }
+    function shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+    // 清除題目字串前綴的題號（「12. 」「簡答題 2：」等），交由系統重新編號
+    function cleanQuestion(text) {
+      return text
+        .replace(/^\s*\d+\.\s*/, "")
+        .replace(/^\s*簡答題\s*\d+[：:]\s*/, "");
+    }
+    const isChoice = (q) => !q.type || q.type === "multiple";
+
+    // 為每個題庫的每一題建立穩定 ID（跨打亂仍可辨識，用於收藏 / 錯題）
+    function buildBanks() {
+      for (const [bankKey, bank] of Object.entries(QUESTION_BANKS)) {
+        bank.questions = bank.source.map((q, i) => ({
+          ...q,
+          _id: `${bankKey}-${i}`,
+          _bank: bankKey,
+          _isChoice: isChoice(q),
+          edition: q.edition || DEFAULT_EDITION
+        }));
+      }
+    }
+    buildBanks();
+
+    function findQuestionById(id) {
+      for (const bank of Object.values(QUESTION_BANKS)) {
+        const found = bank.questions.find((q) => q._id === id);
+        if (found) return found;
+      }
+      return null;
+    }
+
+    // 取得某賽段題庫中所有出現過的屆數（保持原始出現順序）
+    function editionsOf(examType) {
+      const seen = [];
+      QUESTION_BANKS[examType].questions.forEach((q) => {
+        if (!seen.includes(q.edition)) seen.push(q.edition);
+      });
+      return seen;
+    }
+
+    // ---------- 應用狀態 ----------
+    const state = {
+      examType: "preliminary",
+      edition: "all",        // "all" 表示全部屆數
+      activity: "exam",      // "exam" 作答測驗 / "study" 背題模式
+      mode: "all",
+      shuffle: true,
+      timeLimitSec: 0,
+      questions: [],          // 本次作答題目（題庫物件的參照）
+      answers: {},            // { _id: 選項index 或 文字 }
+      marked: new Set(),      // 本次「標記待複查」的題目 _id
+      studyAll: [],           // 背題 / 題庫模式的完整題目集（搜尋前）
+      studyTerm: "",          // 題庫搜尋關鍵字
+      startTime: 0,
+      elapsed: 0,
+      timerInterval: null
+    };
+
+    let bookmarks = new Set(load(LS.bookmarks, []));
+    let wrongSet = new Set(load(LS.wrong, []));
+
+    // ---------- DOM ----------
+    const welcomeSection = $("welcomeSection");
+    const quizSection = $("quizSection");
+    const studySection = $("studySection");
+    const resultSection = $("resultSection");
+    const questionContainer = $("questionContainer");
+    const studyContainer = $("studyContainer");
+    const analysisContainer = $("analysisContainer");
+
+    // ============================================================
+    // 主題（深 / 淺色）
+    // ============================================================
+    function applyTheme(theme) {
+      document.documentElement.setAttribute("data-theme", theme);
+      $("themeBtn").textContent = theme === "dark" ? "☀️" : "🌙";
+      save(LS.theme, theme);
+    }
+    (function initTheme() {
+      const saved = load(LS.theme, null);
+      const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      applyTheme(saved || (prefersDark ? "dark" : "light"));
+    })();
+    $("themeBtn").addEventListener("click", () => {
+      const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+      applyTheme(next);
+    });
+
+    // ============================================================
+    // 首頁設定互動
+    // ============================================================
+    function bindSeg(segId, onChange) {
+      const seg = $(segId);
+      seg.querySelectorAll(".opt").forEach((opt) => {
+        opt.addEventListener("click", () => {
+          seg.querySelectorAll(".opt").forEach((o) => o.classList.remove("active"));
+          opt.classList.add("active");
+          opt.querySelector("input").checked = true;
+          onChange(opt.querySelector("input").value);
+        });
+      });
+    }
+    bindSeg("modeSeg", (v) => { state.mode = v; });
+    bindSeg("shuffleSeg", (v) => { state.shuffle = v === "1"; });
+    bindSeg("activitySeg", (v) => { state.activity = v; });
+
+    // 依目前賽段填入屆數下拉選單
+    function populateEditions() {
+      const sel = $("editionSelect");
+      const editions = editionsOf(state.examType);
+      // 只有一種屆數時，「全部屆數」其實等同該屆，仍提供以保持一致
+      const opts = ['<option value="all">全部屆數</option>']
+        .concat(editions.map((e) => `<option value="${e}">${e}</option>`));
+      sel.innerHTML = opts.join("");
+      state.edition = "all";
+      sel.value = "all";
+    }
+    populateEditions();
+
+    $("examTypeSelect").addEventListener("change", (e) => {
+      state.examType = e.target.value;
+      populateEditions();   // 切換賽段時重新載入可用屆數
+    });
+    $("editionSelect").addEventListener("change", (e) => { state.edition = e.target.value; });
+    $("timeLimitSelect").addEventListener("change", (e) => {
+      state.timeLimitSec = parseInt(e.target.value, 10) * 60;
+    });
+
+    function refreshCounts() {
+      $("wrongCountSub").textContent = `錯題本：${wrongSet.size} 題`;
+      $("bmCountSub").textContent = `收藏：${bookmarks.size} 題`;
+    }
+    refreshCounts();
+
+    // ============================================================
+    // 依模式組裝題目
+    // ============================================================
+    function collectQuestions() {
+      const bank = QUESTION_BANKS[state.examType];
+      // 先依屆數篩選（"all" 表示不限）
+      let base = bank.questions;
+      if (state.edition && state.edition !== "all") {
+        base = base.filter((q) => q.edition === state.edition);
+      }
+      let pool;
+      switch (state.mode) {
+        case "choice":
+          pool = base.filter((q) => q._isChoice);
+          break;
+        case "text":
+          pool = base.filter((q) => !q._isChoice);
+          break;
+        case "wrong":
+          pool = base.filter((q) => wrongSet.has(q._id));
+          break;
+        case "bookmark":
+          pool = base.filter((q) => bookmarks.has(q._id));
+          break;
+        default:
+          pool = base.slice();
+      }
+      // 永遠在副本上操作，避免破壞原始題庫順序
+      pool = pool.slice();
+      if (state.shuffle) {
+        // 選擇題與非選擇題各自打亂，再讓選擇題在前
+        const choices = shuffle(pool.filter((q) => q._isChoice));
+        const texts = shuffle(pool.filter((q) => !q._isChoice));
+        pool = [...choices, ...texts];
+      }
+      return pool;
+    }
+
+    // ============================================================
+    // 開始作答
+    // ============================================================
+    function startQuiz(resume = false) {
+      if (!resume) {
+        state.questions = collectQuestions();
+        state.answers = {};
+        state.marked = new Set();
+        state.elapsed = 0;
+        if (state.questions.length === 0) {
+          alert("此模式目前沒有題目，請改選其他模式或試卷。");
+          return;
+        }
+      }
+
+      welcomeSection.classList.add("hidden");
+      resultSection.classList.add("hidden");
+      quizSection.classList.remove("hidden");
+
+      // 本次題目若橫跨多個屆數，才在題卡上顯示屆數標籤
+      state.showEdition = new Set(state.questions.map((q) => q.edition)).size > 1;
+
+      const bank = QUESTION_BANKS[state.examType];
+      const edLabel = state.edition && state.edition !== "all" ? ` · ${state.edition}` : "";
+      $("examTitle").textContent = bank.title + edLabel;
+      $("totalCount").textContent = state.questions.length;
+      $("timeWrap").classList.toggle("hidden", false);
+
+      renderQuestions();
+      updateProgress();
+
+      state.startTime = Date.now() - state.elapsed * 1000;
+      startTimer();
+      persistProgress();
+      window.scrollTo({ top: 0 });
+    }
+
+    function startTimer() {
+      if (state.timerInterval) clearInterval(state.timerInterval);
+      state.timerInterval = setInterval(() => {
+        state.elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+        if (state.timeLimitSec > 0) {
+          const remain = state.timeLimitSec - state.elapsed;
+          $("timeDisplay").textContent = fmtTime(Math.max(0, remain));
+          $("timeDisplay").parentElement.classList.toggle("danger", remain <= 60);
+          if (remain <= 0) {
+            alert("作答時間已到，系統將自動提交。");
+            showResult();
+            return;
+          }
+        } else {
+          $("timeDisplay").textContent = fmtTime(state.elapsed);
+        }
+        // 每 5 秒暫存一次進度
+        if (state.elapsed % 5 === 0) persistProgress();
+      }, 1000);
+    }
+    function stopTimer() {
+      if (state.timerInterval) { clearInterval(state.timerInterval); state.timerInterval = null; }
+    }
+
+    // ============================================================
+    // 渲染題目
+    // ============================================================
+    function questionTypeTag(q) {
+      if (q._isChoice) return "選擇題";
+      if (/簡答題/.test(q.question)) return "簡答題";
+      return "程式題";
+    }
+
+    // 題目標籤：題型 +（當本次橫跨多個屆數時）屆數標籤
+    function tagsHtml(q) {
+      let html = `<span class="tag">${questionTypeTag(q)}</span>`;
+      if (state.showEdition) html += ` <span class="tag edition">${q.edition}</span>`;
+      return html;
+    }
+
+    function makeStarButton(q) {
+      const btn = document.createElement("button");
+      btn.className = "star-btn" + (bookmarks.has(q._id) ? " on" : "");
+      btn.title = "收藏此題";
+      btn.setAttribute("aria-label", "收藏此題");
+      btn.setAttribute("aria-pressed", bookmarks.has(q._id) ? "true" : "false");
+      btn.textContent = bookmarks.has(q._id) ? "★" : "☆";
+      btn.addEventListener("click", () => {
+        if (bookmarks.has(q._id)) { bookmarks.delete(q._id); btn.classList.remove("on"); btn.textContent = "☆"; }
+        else { bookmarks.add(q._id); btn.classList.add("on"); btn.textContent = "★"; }
+        save(LS.bookmarks, [...bookmarks]);
+        refreshCounts();
+      });
+      return btn;
+    }
+
+    // 「標記待複查」按鈕（僅本次作答有效，會反映在題目導航面板）
+    function makeFlagButton(q) {
+      const btn = document.createElement("button");
+      btn.className = "flag-btn" + (state.marked.has(q._id) ? " on" : "");
+      btn.title = "標記本題以便稍後複查";
+      btn.setAttribute("aria-label", "標記本題以便稍後複查");
+      btn.textContent = "🚩";
+      btn.addEventListener("click", () => {
+        if (state.marked.has(q._id)) { state.marked.delete(q._id); btn.classList.remove("on"); }
+        else { state.marked.add(q._id); btn.classList.add("on"); }
+        updateProgress();
+        persistProgress();
+      });
+      return btn;
+    }
+
+    function renderQuestions() {
+      questionContainer.innerHTML = "";
+      state.questions.forEach((q, idx) => {
+        const card = document.createElement("div");
+        card.className = "question-card";
+        card.id = `q-${idx}`;
+
+        // 標題列
+        const top = document.createElement("div");
+        top.className = "q-top";
+        const no = document.createElement("span");
+        no.className = "q-no";
+        no.textContent = idx + 1;
+        const qText = document.createElement("div");
+        qText.className = "q-text";
+        qText.innerHTML = `${cleanQuestion(q.question)} ${tagsHtml(q)}`;
+        top.appendChild(no);
+        top.appendChild(qText);
+        top.appendChild(makeFlagButton(q));
+        top.appendChild(makeStarButton(q));
+        card.appendChild(top);
+
+        // 內容
+        if (q._isChoice) {
+          const opts = document.createElement("div");
+          opts.className = "options";
+          q.options.forEach((opt, optIdx) => {
+            const id = `${q._id}__${optIdx}`;
+            const label = document.createElement("label");
+            label.className = "option";
+            label.htmlFor = id;
+            if (state.answers[q._id] === optIdx) label.classList.add("selected");
+
+            const input = document.createElement("input");
+            input.type = "radio";
+            input.name = q._id;
+            input.id = id;
+            input.checked = state.answers[q._id] === optIdx;
+            input.addEventListener("change", () => {
+              state.answers[q._id] = optIdx;
+              opts.querySelectorAll(".option").forEach((o) => o.classList.remove("selected"));
+              label.classList.add("selected");
+              updateProgress();
+              persistProgress();
+            });
+
+            const letter = document.createElement("span");
+            letter.className = "opt-letter";
+            letter.textContent = String.fromCharCode(65 + optIdx);
+            const txt = document.createElement("span");
+            txt.textContent = opt;
+
+            label.appendChild(input);
+            label.appendChild(letter);
+            label.appendChild(txt);
+            opts.appendChild(label);
+          });
+          card.appendChild(opts);
+        } else {
+          const ta = document.createElement("textarea");
+          ta.placeholder = "請在此輸入答案……";
+          ta.value = state.answers[q._id] || "";
+          ta.addEventListener("input", (e) => {
+            state.answers[q._id] = e.target.value;
+            updateProgress();
+          });
+          ta.addEventListener("blur", persistProgress);
+          card.appendChild(ta);
+        }
+
+        questionContainer.appendChild(card);
+      });
+      renderNavigator();
+    }
+
+    // ---------- 題目導航面板 ----------
+    function renderNavigator() {
+      const palette = $("navPalette");
+      palette.innerHTML = "";
+      state.questions.forEach((q, idx) => {
+        const cell = document.createElement("button");
+        cell.type = "button";
+        cell.className = "nav-cell";
+        if (isAnswered(q)) cell.classList.add("answered");
+        if (state.marked.has(q._id)) cell.classList.add("marked");
+        cell.textContent = idx + 1;
+        cell.title = `第 ${idx + 1} 題`;
+        cell.addEventListener("click", () => {
+          const target = $(`q-${idx}`);
+          if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+        palette.appendChild(cell);
+      });
+      // 圖例
+      const legend = document.createElement("div");
+      legend.className = "nav-legend";
+      legend.innerHTML =
+        '<span><i class="lg-ans"></i>已作答</span>' +
+        '<span><i class="lg-un"></i>未作答</span>' +
+        '<span><i class="lg-mk"></i>已標記</span>';
+      palette.appendChild(legend);
+    }
+
+    function isAnswered(q) {
+      const a = state.answers[q._id];
+      if (q._isChoice) return a !== undefined && a !== null;
+      return typeof a === "string" && a.trim().length > 0;
+    }
+
+    function updateProgress() {
+      const answered = state.questions.filter(isAnswered).length;
+      const total = state.questions.length;
+      $("answeredCount").textContent = answered;
+      $("progressFill").style.width = total ? `${(answered / total) * 100}%` : "0%";
+      // 標記數
+      $("markedCount").textContent = state.marked.size;
+      $("markWrap").classList.toggle("hidden", state.marked.size === 0);
+      // 同步題目導航面板狀態
+      const cells = $("navPalette").querySelectorAll(".nav-cell");
+      state.questions.forEach((q, idx) => {
+        const cell = cells[idx];
+        if (!cell) return;
+        cell.classList.toggle("answered", isAnswered(q));
+        cell.classList.toggle("marked", state.marked.has(q._id));
+      });
+    }
+
+    // ============================================================
+    // 進度暫存 / 還原
+    // ============================================================
+    function persistProgress() {
+      if (quizSection.classList.contains("hidden")) return;
+      save(LS.progress, {
+        examType: state.examType,
+        edition: state.edition,
+        mode: state.mode,
+        shuffle: state.shuffle,
+        timeLimitSec: state.timeLimitSec,
+        questionIds: state.questions.map((q) => q._id),
+        answers: state.answers,
+        marked: [...state.marked],
+        elapsed: state.elapsed
+      });
+    }
+
+    function tryRestoreProgress() {
+      const p = load(LS.progress, null);
+      if (!p || !p.questionIds || p.questionIds.length === 0) return;
+      $("resumeNotice").classList.remove("hidden");
+
+      $("resumeBtn").onclick = () => {
+        const restored = p.questionIds.map(findQuestionById).filter(Boolean);
+        if (restored.length === 0) { remove(LS.progress); $("resumeNotice").classList.add("hidden"); return; }
+        state.examType = p.examType;
+        state.edition = p.edition || "all";
+        state.mode = p.mode;
+        state.shuffle = p.shuffle;
+        state.timeLimitSec = p.timeLimitSec;
+        state.questions = restored;
+        state.answers = p.answers || {};
+        state.marked = new Set(p.marked || []);
+        state.elapsed = p.elapsed || 0;
+        startQuiz(true);
+      };
+      $("discardBtn").onclick = () => {
+        remove(LS.progress);
+        $("resumeNotice").classList.add("hidden");
+      };
+    }
+
+    // ============================================================
+    // 顯示結果與解析
+    // ============================================================
+    function showResult() {
+      stopTimer();
+      remove(LS.progress);
+
+      quizSection.classList.add("hidden");
+      resultSection.classList.remove("hidden");
+
+      let correctCount = 0, totalChoice = 0, textCount = 0;
+      const newWrong = [];
+
+      state.questions.forEach((q) => {
+        if (q._isChoice) {
+          totalChoice++;
+          if (state.answers[q._id] === q.answerIndex) {
+            correctCount++;
+            wrongSet.delete(q._id);          // 答對則移出錯題本
+          } else {
+            newWrong.push(q._id);            // 答錯（或未答）加入錯題本
+          }
+        } else {
+          textCount++;
+        }
+      });
+
+      // 更新錯題本
+      newWrong.forEach((id) => wrongSet.add(id));
+      save(LS.wrong, [...wrongSet]);
+      refreshCounts();
+
+      const percent = totalChoice ? Math.round((correctCount / totalChoice) * 100) : 0;
+      $("scorePercent").textContent = totalChoice ? percent : "—";
+      $("scoreRing").style.setProperty("--val", percent);
+      $("sumCorrect").textContent = correctCount;
+      $("sumTotalChoice").textContent = totalChoice;
+      $("sumText").textContent = textCount;
+      $("sumTime").textContent = fmtTime(state.elapsed);
+
+      // 完成作答即自動打卡
+      doCheckin();
+
+      // 記錄本次成績到歷史
+      recordHistory({
+        date: Date.now(),
+        title: QUESTION_BANKS[state.examType].title,
+        edition: state.edition === "all" ? "全部屆數" : state.edition,
+        mode: state.mode,
+        percent, correctCount, totalChoice, textCount,
+        elapsed: state.elapsed
+      });
+
+      renderKnowledgePoints();
+      renderAnalysis();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    // 依知識點統計選擇題正確率，找出較弱主題
+    function renderKnowledgePoints() {
+      const kpCard = $("kpCard");
+      const container = $("kpContainer");
+      const stats = {};
+      state.questions.forEach((q) => {
+        if (!q._isChoice) return;
+        const kp = (q.knowledge_points || "其他").trim();
+        if (!stats[kp]) stats[kp] = { total: 0, correct: 0 };
+        stats[kp].total++;
+        if (state.answers[q._id] === q.answerIndex) stats[kp].correct++;
+      });
+      const rows = Object.entries(stats)
+        .map(([kp, s]) => ({ kp, pct: Math.round((s.correct / s.total) * 100), ...s }))
+        .sort((a, b) => a.pct - b.pct); // 由弱到強
+
+      if (rows.length === 0) { kpCard.classList.add("hidden"); return; }
+      kpCard.classList.remove("hidden");
+      container.innerHTML = "";
+      rows.forEach((r) => {
+        const level = r.pct >= 80 ? "good" : r.pct >= 50 ? "mid" : "bad";
+        const row = document.createElement("div");
+        row.className = "kp-row";
+        row.innerHTML =
+          `<div class="kp-head"><span>${r.kp}</span>` +
+          `<span class="pct">${r.correct}/${r.total}（${r.pct}%）</span></div>` +
+          `<div class="kp-bar"><i class="${level}" style="width:${r.pct}%"></i></div>`;
+        container.appendChild(row);
+      });
+    }
+
+    function renderAnalysis() {
+      analysisContainer.innerHTML = "";
+      state.questions.forEach((q, idx) => {
+        const card = document.createElement("div");
+        card.className = "question-card";
+
+        const top = document.createElement("div");
+        top.className = "q-top";
+        const no = document.createElement("span");
+        no.className = "q-no";
+        no.textContent = idx + 1;
+        const qText = document.createElement("div");
+        qText.className = "q-text";
+        qText.innerHTML = `${cleanQuestion(q.question)} ${tagsHtml(q)}`;
+        top.appendChild(no);
+        top.appendChild(qText);
+        top.appendChild(makeStarButton(q));
+        card.appendChild(top);
+
+        if (q._isChoice) {
+          const userIdx = state.answers[q._id];
+          const answered = userIdx !== undefined && userIdx !== null;
+          const correct = userIdx === q.answerIndex;
+          card.classList.add(correct ? "is-correct" : "is-wrong");
+
+          const yourLine = document.createElement("p");
+          yourLine.className = "ans-line";
+          yourLine.innerHTML = `<strong>你的答案：</strong>`;
+          if (!answered) {
+            yourLine.innerHTML += `<span class="wrong-text">未作答</span><span class="badge skip">未答</span>`;
+          } else {
+            yourLine.innerHTML += `<span class="${correct ? "correct-text" : "wrong-text"}">${q.options[userIdx]}</span>` +
+              `<span class="badge ${correct ? "correct" : "wrong"}">${correct ? "正確" : "錯誤"}</span>`;
+          }
+          card.appendChild(yourLine);
+
+          const correctLine = document.createElement("p");
+          correctLine.className = "ans-line";
+          correctLine.innerHTML = `<strong>正確答案：</strong><span class="correct-text">${q.options[q.answerIndex]}</span>`;
+          card.appendChild(correctLine);
+        } else {
+          const userAns = (state.answers[q._id] || "").trim();
+          const yourLine = document.createElement("p");
+          yourLine.className = "ans-line";
+          yourLine.innerHTML = `<strong>你的答案：</strong>` +
+            (userAns ? escapeHtml(userAns) : `<span class="wrong-text">未作答</span>`) +
+            `<span class="badge review">參考解答</span>`;
+          card.appendChild(yourLine);
+
+          const refLine = document.createElement("p");
+          refLine.className = "ans-line";
+          refLine.innerHTML = `<strong>參考答案：</strong>${q.answer}`;
+          card.appendChild(refLine);
+        }
+
+        const box = document.createElement("div");
+        box.className = "analysis-box";
+        box.innerHTML =
+          `<p><strong>📌 知識點：</strong>${q.knowledge_points}</p>` +
+          `<p><strong>💡 解題思路：</strong>${q.solution_idea}</p>`;
+        card.appendChild(box);
+
+        analysisContainer.appendChild(card);
+      });
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement("div");
+      div.textContent = str;
+      return div.innerHTML.replace(/\n/g, "<br>");
+    }
+
+    // ============================================================
+    // 按鈕事件
+    // ============================================================
+    $("startBtn").addEventListener("click", () => {
+      if (state.activity === "study") startStudy();
+      else startQuiz(false);
+    });
+
+    // 題目導航面板開合
+    $("navToggle").addEventListener("click", () => {
+      const palette = $("navPalette");
+      const open = palette.classList.toggle("hidden") === false;
+      $("navToggle").textContent = open ? "題目導航 ▴" : "題目導航 ▾";
+    });
+
+    $("submitBtn").addEventListener("click", () => {
+      const unanswered = state.questions.filter((q) => !isAnswered(q)).length;
+      const marked = state.marked.size;
+      let msg = "";
+      if (unanswered > 0) msg += `尚有 ${unanswered} 題未作答`;
+      if (marked > 0) msg += `${msg ? "、" : "尚有 "}${marked} 題已標記待複查`;
+      if (msg && !confirm(`${msg}，確定要提交嗎？`)) return;
+      showResult();
+    });
+
+    $("quitBtn").addEventListener("click", () => {
+      if (!confirm("放棄本次作答並返回首頁？目前進度會被清除。")) return;
+      stopTimer();
+      remove(LS.progress);
+      goHome();
+    });
+
+    $("backHomeBtn").addEventListener("click", goHome);
+
+    $("restartBtn").addEventListener("click", () => {
+      // 用相同題目重新作答
+      state.answers = {};
+      state.marked = new Set();
+      state.elapsed = 0;
+      startQuiz(true);
+    });
+
+    $("retryWrongBtn").addEventListener("click", () => {
+      const wrongQs = state.questions.filter((q) => q._isChoice && state.answers[q._id] !== q.answerIndex);
+      if (wrongQs.length === 0) { alert("本卷沒有答錯的選擇題，太棒了！🎉"); return; }
+      state.questions = wrongQs.slice();
+      state.answers = {};
+      state.marked = new Set();
+      state.elapsed = 0;
+      startQuiz(true);
+    });
+
+    $("clearHistoryBtn").addEventListener("click", () => {
+      if (!confirm("確定要清除所有作答記錄嗎？此操作無法復原。")) return;
+      remove(LS.history);
+      renderDashboard();
+    });
+
+    // ============================================================
+    // 每日打卡 + 成就徽章
+    // ============================================================
+    function dayKey(d) { return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; }
+    function getCheckins() { return load(LS.checkin, []); }
+    function isCheckedToday() { return getCheckins().includes(dayKey(new Date())); }
+    function doCheckin() {
+      const list = getCheckins();
+      const k = dayKey(new Date());
+      if (!list.includes(k)) { list.push(k); save(LS.checkin, list); }
+    }
+    function checkinStreakCount() {
+      const set = new Set(getCheckins());
+      let streak = 0; const cur = new Date();
+      for (let i = 0; i < 3650; i++) {
+        if (set.has(dayKey(cur))) { streak++; cur.setDate(cur.getDate() - 1); }
+        else if (i === 0) { cur.setDate(cur.getDate() - 1); }
+        else break;
+      }
+      return streak;
+    }
+    function monthCheckinCount() {
+      const now = new Date();
+      return getCheckins().filter((k) => {
+        const [y, m] = k.split("-").map(Number);
+        return y === now.getFullYear() && m === now.getMonth();
+      }).length;
+    }
+
+    // 成就徽章定義
+    const BADGES = [
+      { emoji: "🎯", name: "初試啼聲", desc: "完成首次作答", earned: (c) => c.attempts >= 1 },
+      { emoji: "💯", name: "滿分達成", desc: "選擇題拿到滿分", earned: (c) => c.perfect },
+      { emoji: "📚", name: "勤學不倦", desc: "累計作答 10 次", earned: (c) => c.attempts >= 10 },
+      { emoji: "🌟", name: "高手在此", desc: "單次得分達 90%", earned: (c) => c.best >= 90 },
+      { emoji: "🔥", name: "三日打卡", desc: "連續打卡 3 天", earned: (c) => c.streak >= 3 },
+      { emoji: "⚡", name: "七日連勝", desc: "連續打卡 7 天", earned: (c) => c.streak >= 7 },
+      { emoji: "🏆", name: "打卡達人", desc: "累計打卡 30 天", earned: (c) => c.totalCheckin >= 30 },
+      { emoji: "⭐", name: "收藏家", desc: "收藏滿 5 題", earned: (c) => c.bookmarks >= 5 }
+    ];
+
+    function renderCheckin() {
+      const checkins = getCheckins();
+      const streak = checkinStreakCount();
+      // KPI
+      $("checkinKpi").innerHTML = [
+        ["連續打卡", streak + " 天"],
+        ["本月打卡", monthCheckinCount() + " 天"],
+        ["累計打卡", checkins.length + " 天"]
+      ].map(([l, n]) => `<div class="kpi"><div class="n">${n}</div><div class="l">${l}</div></div>`).join("");
+
+      // 打卡按鈕狀態
+      const btn = $("checkinBtn");
+      if (isCheckedToday()) { btn.textContent = "今日已打卡 ✓"; btn.disabled = true; btn.classList.add("btn-ghost"); btn.classList.remove("btn-primary"); }
+      else { btn.textContent = "今日打卡"; btn.disabled = false; btn.classList.add("btn-primary"); btn.classList.remove("btn-ghost"); }
+
+      // 最近 14 天
+      const set = new Set(checkins);
+      const strip = $("checkinStrip");
+      strip.innerHTML = "";
+      for (let i = 13; i >= 0; i--) {
+        const d = new Date(); d.setDate(d.getDate() - i);
+        const cell = document.createElement("div");
+        cell.className = "day" + (set.has(dayKey(d)) ? " on" : "") + (i === 0 ? " today" : "");
+        cell.textContent = `${d.getMonth() + 1}/${d.getDate()}`;
+        cell.title = set.has(dayKey(d)) ? "已打卡" : "未打卡";
+        strip.appendChild(cell);
+      }
+
+      // 成就徽章
+      const hist = load(LS.history, []);
+      const scored = hist.filter((h) => h.totalChoice > 0);
+      const ctx = {
+        attempts: hist.length,
+        perfect: scored.some((h) => h.percent === 100),
+        best: scored.length ? Math.max(...scored.map((h) => h.percent)) : 0,
+        streak,
+        totalCheckin: checkins.length,
+        bookmarks: bookmarks.size
+      };
+      const earnedCount = BADGES.filter((b) => b.earned(ctx)).length;
+      $("badgeGrid").innerHTML = BADGES.map((b) => {
+        const on = b.earned(ctx);
+        return `<div class="badge-item${on ? " earned" : ""}" title="${on ? "已獲得" : "尚未獲得"}：${b.desc}">
+          <div class="emoji">${on ? b.emoji : "🔒"}</div>
+          <div class="name">${b.name}</div>
+          <div class="desc">${b.desc}</div>
+        </div>`;
+      }).join("");
+      $("checkinCard").querySelector("h3").textContent = `🔥 每日打卡（成就 ${earnedCount}/${BADGES.length}）`;
+    }
+
+    $("checkinBtn").addEventListener("click", () => {
+      doCheckin();
+      renderCheckin();
+    });
+
+    function goHome() {
+      stopTimer();
+      quizSection.classList.add("hidden");
+      studySection.classList.add("hidden");
+      resultSection.classList.add("hidden");
+      welcomeSection.classList.remove("hidden");
+      refreshCounts();
+      renderDashboard();
+      renderCheckin();
+      tryRestoreProgress();
+      window.scrollTo({ top: 0 });
+    }
+
+    // ============================================================
+    // 背題 / 閃卡學習模式（瀏覽題庫並逐題揭曉答案，不計分）
+    // ============================================================
+    // browseAll=true 時忽略練習模式，顯示目前賽段 / 屆數的整個題庫（供「瀏覽 / 搜尋題庫」用）
+    function startStudy(browseAll = false) {
+      let list;
+      if (browseAll) {
+        list = QUESTION_BANKS[state.examType].questions.filter(
+          (q) => state.edition === "all" || q.edition === state.edition
+        );
+      } else {
+        list = collectQuestions();
+      }
+      if (list.length === 0) { alert("此模式目前沒有題目，請改選其他模式或試卷。"); return; }
+      state.studyAll = list;
+      state.studyTerm = "";
+      state.showEdition = new Set(list.map((q) => q.edition)).size > 1;
+
+      welcomeSection.classList.add("hidden");
+      quizSection.classList.add("hidden");
+      resultSection.classList.add("hidden");
+      studySection.classList.remove("hidden");
+
+      const edLabel = state.edition && state.edition !== "all" ? ` · ${state.edition}` : "";
+      $("studyTitle").textContent = QUESTION_BANKS[state.examType].title + edLabel + (browseAll ? "（題庫）" : "（背題模式）");
+      $("studySearch").value = "";
+      $("studyToggleAll").textContent = "全部顯示答案";
+      renderStudy();
+      window.scrollTo({ top: 0 });
+    }
+
+    // 將含 HTML 的題目轉為純文字（供搜尋比對）
+    function stripTags(s) {
+      return (s || "").replace(/<[^>]+>/g, " ")
+        .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&").replace(/&nbsp;/g, " ");
+    }
+    function qMatches(q, term) {
+      if (!term) return true;
+      const hay = [stripTags(q.question), (q.options || []).join(" "), stripTags(q.answer),
+                   q.knowledge_points, q.solution_idea].join(" ").toLowerCase();
+      return hay.includes(term.toLowerCase());
+    }
+    // 在指定元素的文字節點中安全標示關鍵字（不破壞既有 HTML 標籤）
+    function highlightIn(root, term) {
+      if (!term) return;
+      const esc = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const rx = new RegExp("(" + esc + ")", "gi");
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+      const nodes = [];
+      for (let n = walker.nextNode(); n; n = walker.nextNode()) nodes.push(n);
+      nodes.forEach((node) => {
+        if (!rx.test(node.nodeValue)) return;
+        rx.lastIndex = 0;
+        const safe = node.nodeValue.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+        const span = document.createElement("span");
+        span.innerHTML = safe.replace(rx, '<span class="search-hl">$1</span>');
+        node.replaceWith(span);
+      });
+    }
+
+    function buildAnswerBlock(q) {
+      const box = document.createElement("div");
+      box.className = "analysis-box";
+      box.style.marginTop = "0.6rem";
+      let html = "";
+      if (q._isChoice) {
+        html += '<div style="margin-bottom:0.4rem;">';
+        q.options.forEach((opt, i) => {
+          const letter = String.fromCharCode(65 + i);
+          const isAns = i === q.answerIndex;
+          html += `<div class="study-opt${isAns ? " is-answer" : ""}">` +
+                  `<span class="opt-letter">${letter}</span><span>${escapeHtml(opt)}</span>` +
+                  `${isAns ? '<span class="badge correct" style="margin-left:auto;">正解</span>' : ""}</div>`;
+        });
+        html += "</div>";
+      } else {
+        html += `<p><strong>參考答案：</strong>${q.answer}</p>`;
+      }
+      html += `<p><strong>📌 知識點：</strong>${q.knowledge_points}</p>`;
+      html += `<p><strong>💡 解題思路：</strong>${q.solution_idea}</p>`;
+      box.innerHTML = html;
+      return box;
+    }
+
+    function renderStudy() {
+      const term = state.studyTerm.trim();
+      const list = state.studyAll.filter((q) => qMatches(q, term));
+      studyContainer.innerHTML = "";
+      $("studyCount").textContent = list.length;
+      $("studyEmpty").classList.toggle("hidden", list.length > 0);
+
+      list.forEach((q, idx) => {
+        const card = document.createElement("div");
+        card.className = "question-card";
+
+        const top = document.createElement("div");
+        top.className = "q-top";
+        const no = document.createElement("span");
+        no.className = "q-no";
+        no.textContent = idx + 1;
+        const qText = document.createElement("div");
+        qText.className = "q-text";
+        qText.innerHTML = `${cleanQuestion(q.question)} ${tagsHtml(q)}`;
+        highlightIn(qText, term);
+        top.appendChild(no);
+        top.appendChild(qText);
+        top.appendChild(makeStarButton(q));
+        card.appendChild(top);
+
+        const answer = buildAnswerBlock(q);
+        highlightIn(answer, term);
+        answer.classList.add("hidden");
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "reveal-btn";
+        btn.textContent = "顯示答案 ▾";
+        btn.addEventListener("click", () => {
+          const show = answer.classList.toggle("hidden") === false;
+          btn.textContent = show ? "隱藏答案 ▴" : "顯示答案 ▾";
+        });
+        card.appendChild(btn);
+        card.appendChild(answer);
+
+        studyContainer.appendChild(card);
+      });
+    }
+
+    // 題庫關鍵字搜尋（即時過濾）
+    let studySearchTimer = null;
+    $("studySearch").addEventListener("input", (e) => {
+      state.studyTerm = e.target.value;
+      clearTimeout(studySearchTimer);
+      studySearchTimer = setTimeout(renderStudy, 150);
+    });
+
+    // 全部展開 / 收合答案
+    $("studyToggleAll").addEventListener("click", () => {
+      const blocks = studyContainer.querySelectorAll(".analysis-box");
+      const btns = studyContainer.querySelectorAll(".reveal-btn");
+      const anyHidden = [...blocks].some((b) => b.classList.contains("hidden"));
+      blocks.forEach((b) => b.classList.toggle("hidden", !anyHidden));
+      btns.forEach((b) => b.textContent = anyHidden ? "隱藏答案 ▴" : "顯示答案 ▾");
+      $("studyToggleAll").textContent = anyHidden ? "全部隱藏答案" : "全部顯示答案";
+    });
+    $("studyExitBtn").addEventListener("click", goHome);
+    $("studyBackBtn").addEventListener("click", goHome);
+    $("browseBankBtn").addEventListener("click", () => startStudy(true));
+
+    // ============================================================
+    // 匯出 / 分享成績
+    // ============================================================
+    function buildReportText() {
+      let correct = 0, totalChoice = 0, textCount = 0;
+      const wrongLines = [];
+      state.questions.forEach((q, idx) => {
+        if (q._isChoice) {
+          totalChoice++;
+          const ok = state.answers[q._id] === q.answerIndex;
+          if (ok) correct++;
+          else {
+            const ua = state.answers[q._id];
+            const uaTxt = (ua === undefined || ua === null) ? "未作答" : q.options[ua];
+            wrongLines.push(`  ${idx + 1}. ${cleanQuestion(q.question).replace(/<[^>]+>/g, "").slice(0, 40)}\n     你的答案：${uaTxt}｜正解：${q.options[q.answerIndex]}`);
+          }
+        } else { textCount++; }
+      });
+      const pct = totalChoice ? Math.round((correct / totalChoice) * 100) : 0;
+      const bank = QUESTION_BANKS[state.examType].title;
+      const ed = state.edition === "all" ? "全部屆數" : state.edition;
+      const lines = [
+        "全澳中學生 Python 解難大賽 — 模擬測試成績",
+        "----------------------------------------",
+        `試卷：${bank}（${ed}）`,
+        `選擇題得分：${totalChoice ? pct + "%" : "—"}（答對 ${correct} / ${totalChoice}）`,
+        `程式 / 簡答題：${textCount} 題`,
+        `用時：${fmtTime(state.elapsed)}`,
+        `日期：${fmtDate(Date.now())}`
+      ];
+      if (wrongLines.length) {
+        lines.push("", "錯題清單：", ...wrongLines);
+      }
+      return lines.join("\n");
+    }
+
+    $("exportBtn").addEventListener("click", async () => {
+      const text = buildReportText();
+      // 優先使用系統分享，其次複製到剪貼簿，最後下載 txt
+      try {
+        if (navigator.share) { await navigator.share({ title: "我的模擬測試成績", text }); return; }
+      } catch { /* 使用者取消分享則往下走 */ }
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(text);
+          alert("成績已複製到剪貼簿！");
+          return;
+        }
+      } catch { /* 改用下載 */ }
+      const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `python模擬測試成績_${Date.now()}.txt`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+
+    // 列印 / 存為 PDF（透過瀏覽器列印對話框，可選「另存為 PDF」）
+    $("printBtn").addEventListener("click", () => window.print());
+
+    // ============================================================
+    // PWA：動態注入 Web App Manifest（可「加到主畫面」，載入後即可離線使用）
+    // ============================================================
+    (function setupManifest() {
+      try {
+        const icon = "data:image/svg+xml," + encodeURIComponent(
+          '<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512">' +
+          '<rect width="512" height="512" rx="96" fill="#2f6df6"/>' +
+          '<text x="50%" y="52%" font-size="300" text-anchor="middle" dominant-baseline="central">🐍</text></svg>'
+        );
+        const manifest = {
+          name: "全澳中學生 Python 解難大賽 — 模擬測試",
+          short_name: "Python模擬測試",
+          start_url: ".",
+          display: "standalone",
+          background_color: "#11151c",
+          theme_color: "#2f6df6",
+          icons: [{ src: icon, sizes: "512x512", type: "image/svg+xml", purpose: "any maskable" }]
+        };
+        const blob = new Blob([JSON.stringify(manifest)], { type: "application/manifest+json" });
+        const link = document.createElement("link");
+        link.rel = "manifest";
+        link.href = URL.createObjectURL(blob);
+        document.head.appendChild(link);
+      } catch { /* 不支援時略過，不影響使用 */ }
+    })();
+
+    // ============================================================
+    // 鍵盤快捷鍵 + 說明彈窗
+    // ============================================================
+    const shortcutModal = $("shortcutModal");
+    function openShortcuts() { shortcutModal.classList.remove("hidden"); }
+    function closeShortcuts() { shortcutModal.classList.add("hidden"); }
+    $("helpBtn").addEventListener("click", openShortcuts);
+    $("shortcutClose").addEventListener("click", closeShortcuts);
+    shortcutModal.addEventListener("click", (e) => { if (e.target === shortcutModal) closeShortcuts(); });
+
+    // 找出目前視窗中最接近頂端的題目索引（供快捷鍵定位「目前題目」）
+    function currentQuestionIndex() {
+      const cards = questionContainer.querySelectorAll(".question-card");
+      let best = 0, bestDist = Infinity;
+      cards.forEach((c, i) => {
+        const d = Math.abs(c.getBoundingClientRect().top - 130);
+        if (d < bestDist) { bestDist = d; best = i; }
+      });
+      return best;
+    }
+    function scrollToQuestion(idx) {
+      const el = $(`q-${idx}`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    document.addEventListener("keydown", (e) => {
+      // 說明彈窗：? 開啟、Esc 關閉（任何畫面皆可）
+      if (e.key === "?" ) { e.preventDefault(); shortcutModal.classList.contains("hidden") ? openShortcuts() : closeShortcuts(); return; }
+      if (e.key === "Escape" && !shortcutModal.classList.contains("hidden")) { closeShortcuts(); return; }
+
+      // 游標在輸入框 / 文字區時，不攔截一般按鍵
+      const tag = (e.target.tagName || "").toLowerCase();
+      const typing = tag === "input" || tag === "textarea";
+
+      // 作答中快捷鍵
+      if (!quizSection.classList.contains("hidden")) {
+        if (e.ctrlKey && e.key === "Enter") { e.preventDefault(); $("submitBtn").click(); return; }
+        if (typing) return;
+        const idx = currentQuestionIndex();
+        const q = state.questions[idx];
+        if (!q) return;
+        if (e.key === "j" || e.key === "ArrowDown") { e.preventDefault(); scrollToQuestion(Math.min(idx + 1, state.questions.length - 1)); }
+        else if (e.key === "k" || e.key === "ArrowUp") { e.preventDefault(); scrollToQuestion(Math.max(idx - 1, 0)); }
+        else if (e.key === "f") { e.preventDefault(); const fb = $(`q-${idx}`).querySelector(".flag-btn"); if (fb) fb.click(); }
+        else if (e.key === "m") { e.preventDefault(); $("navToggle").click(); }
+        else if (q._isChoice) {
+          let opt = -1;
+          if (/^[1-9]$/.test(e.key)) opt = parseInt(e.key, 10) - 1;
+          else if (/^[a-i]$/i.test(e.key)) opt = e.key.toLowerCase().charCodeAt(0) - 97;
+          if (opt >= 0 && opt < q.options.length) {
+            e.preventDefault();
+            const input = document.getElementById(`${q._id}__${opt}`);
+            if (input) input.click();
+          }
+        }
+        return;
+      }
+
+      // 背題模式快捷鍵
+      if (!studySection.classList.contains("hidden")) {
+        if (typing) return;
+        if (e.key === "e") { e.preventDefault(); $("studyToggleAll").click(); }
+        else if (e.key === "/") { e.preventDefault(); $("studySearch").focus(); }
+      }
+    });
+
+    // ============================================================
+    // 學習報告（歷史記錄 + 統計 + 趨勢圖）
+    // ============================================================
+    function recordHistory(entry) {
+      const hist = load(LS.history, []);
+      hist.push(entry);
+      // 僅保留最近 HISTORY_MAX 筆
+      while (hist.length > HISTORY_MAX) hist.shift();
+      save(LS.history, hist);
+    }
+
+    function fmtDate(ts) {
+      const d = new Date(ts);
+      const p = (n) => n.toString().padStart(2, "0");
+      return `${d.getFullYear()}/${p(d.getMonth() + 1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+    }
+
+    // 連續作答天數（以本地日期計算）
+    function calcStreak(hist) {
+      const days = new Set(hist.map((h) => {
+        const d = new Date(h.date);
+        return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+      }));
+      let streak = 0;
+      const cur = new Date();
+      // 若今天沒作答，仍可從昨天起算連續天數
+      for (let i = 0; i < 3650; i++) {
+        const key = `${cur.getFullYear()}-${cur.getMonth()}-${cur.getDate()}`;
+        if (days.has(key)) { streak++; cur.setDate(cur.getDate() - 1); }
+        else if (i === 0) { cur.setDate(cur.getDate() - 1); } // 容許今天尚未作答
+        else break;
+      }
+      return streak;
+    }
+
+    function renderDashboard() {
+      const hist = load(LS.history, []);
+      const card = $("dashboardCard");
+      if (hist.length === 0) { card.classList.add("hidden"); return; }
+      card.classList.remove("hidden");
+
+      // 只統計含選擇題的記錄（純簡答練習沒有得分）
+      const scored = hist.filter((h) => h.totalChoice > 0);
+      const avg = scored.length ? Math.round(scored.reduce((s, h) => s + h.percent, 0) / scored.length) : 0;
+      const best = scored.length ? Math.max(...scored.map((h) => h.percent)) : 0;
+      const totalSec = hist.reduce((s, h) => s + (h.elapsed || 0), 0);
+      const totalMin = Math.round(totalSec / 60);
+
+      $("kpiGrid").innerHTML = [
+        ["作答次數", hist.length],
+        ["平均得分", scored.length ? avg + "%" : "—"],
+        ["最佳得分", scored.length ? best + "%" : "—"],
+        ["累計時間", totalMin + " 分"],
+        ["連續天數", calcStreak(hist) + " 天"]
+      ].map(([l, n]) => `<div class="kpi"><div class="n">${n}</div><div class="l">${l}</div></div>`).join("");
+
+      // 趨勢圖：最近 12 筆有得分的記錄
+      const recent = scored.slice(-12);
+      const chart = $("scoreChart");
+      if (recent.length === 0) {
+        chart.innerHTML = '<div class="empty" style="padding:1rem;">尚無含選擇題的記錄</div>';
+      } else {
+        chart.innerHTML = recent.map((h) => {
+          const ht = Math.max(4, h.percent);
+          return `<div class="bar" style="height:${ht}%" title="${fmtDate(h.date)}：${h.percent}%"><span>${h.percent}</span></div>`;
+        }).join("");
+      }
+
+      // 最近記錄清單（最新在上，最多 8 筆）
+      const list = $("historyList");
+      const modeLabel = { all: "全部", choice: "選擇題", text: "程式/簡答", wrong: "錯題重練", bookmark: "我的收藏" };
+      list.innerHTML = hist.slice().reverse().slice(0, 8).map((h) => {
+        const cls = h.totalChoice === 0 ? "" : h.percent >= 80 ? "" : h.percent >= 50 ? " mid" : " low";
+        const score = h.totalChoice === 0 ? "—" : h.percent + "%";
+        return `<div class="history-item">
+          <div>
+            <div>${h.title}${h.edition && h.edition !== "全部屆數" ? " · " + h.edition : ""}<span class="meta">（${modeLabel[h.mode] || h.mode}）</span></div>
+            <div class="meta">${fmtDate(h.date)} · 用時 ${fmtTime(h.elapsed || 0)}${h.totalChoice ? " · 答對 " + h.correctCount + "/" + h.totalChoice : ""}</div>
+          </div>
+          <span class="pill${cls}">${score}</span>
+        </div>`;
+      }).join("");
+    }
+
+    // ============================================================
+    // 回到頂部按鈕
+    // ============================================================
+    const fab = $("topFab");
+    fab.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+    window.addEventListener("scroll", () => {
+      fab.classList.toggle("show", window.scrollY > 400);
+    });
+
+    // 離開頁面前若仍在作答，暫存進度
+    window.addEventListener("beforeunload", () => {
+      if (!quizSection.classList.contains("hidden")) persistProgress();
+    });
+
+    // 啟動：渲染學習報告 / 打卡並檢查是否有未完成進度
+    renderDashboard();
+    renderCheckin();
+    tryRestoreProgress();
+  </script>
+</body>
+</html>
