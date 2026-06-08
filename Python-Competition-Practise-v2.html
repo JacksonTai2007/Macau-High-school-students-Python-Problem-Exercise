@@ -571,6 +571,30 @@
     .kp-bar > i.mid { background: var(--warning); }
     .kp-bar > i.bad { background: var(--danger); }
 
+    /* ---------- 背題 / 閃卡 ---------- */
+    .reveal-btn {
+      margin-top: 0.5rem;
+      background: var(--primary-soft);
+      color: var(--primary);
+      border: 1px dashed var(--primary);
+      border-radius: var(--radius-sm);
+      padding: 0.5rem 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+    }
+    .reveal-btn:hover { background: var(--primary); color: #fff; }
+    .study-opt {
+      padding: 0.5rem 0.8rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      margin-bottom: 0.4rem;
+      display: flex; gap: 0.6rem; align-items: center;
+    }
+    .study-opt.is-answer { border-color: var(--success); background: var(--success-soft); font-weight: 600; }
+    .study-opt .opt-letter { color: var(--text-muted); }
+    .study-opt.is-answer .opt-letter { color: var(--success); }
+
     .hidden { display: none !important; }
 
     footer {
@@ -623,6 +647,14 @@
           <select id="editionSelect">
             <!-- 依所選賽段動態填入可用屆數 -->
           </select>
+        </div>
+
+        <div class="field">
+          <label>作答方式</label>
+          <div class="seg" id="activitySeg">
+            <label class="opt active"><input type="radio" name="activity" value="exam" checked>作答測驗<span class="sub">計分 + 計時</span></label>
+            <label class="opt"><input type="radio" name="activity" value="study">背題模式<span class="sub">閃卡式看答案複習</span></label>
+          </div>
         </div>
 
         <div class="field">
@@ -709,6 +741,22 @@
       </div>
     </section>
 
+    <!-- ====================== 背題模式 ====================== -->
+    <section id="studySection" class="hidden">
+      <div class="quiz-head">
+        <div class="row">
+          <span class="quiz-title" id="studyTitle"></span>
+          <div class="stats">
+            <span>共 <b id="studyCount">0</b> 題</span>
+            <button id="studyToggleAll" class="btn btn-ghost btn-sm" type="button">全部顯示答案</button>
+            <button id="studyExitBtn" class="btn btn-ghost btn-sm" type="button">返回首頁</button>
+          </div>
+        </div>
+      </div>
+      <div id="studyContainer"></div>
+      <button id="studyBackBtn" class="btn btn-ghost btn-block" style="margin-top:0.5rem;">返回首頁</button>
+    </section>
+
     <!-- ====================== 結果 ====================== -->
     <section id="resultSection" class="hidden">
       <div class="card score-hero">
@@ -728,6 +776,7 @@
         <div class="btn-row" style="justify-content:center; margin-top:1.1rem;">
           <button id="retryWrongBtn" class="btn btn-primary">只重練錯題</button>
           <button id="restartBtn" class="btn btn-ghost">重新作答本卷</button>
+          <button id="exportBtn" class="btn btn-ghost">匯出 / 分享成績</button>
           <button id="backHomeBtn" class="btn btn-ghost">返回首頁</button>
         </div>
       </div>
@@ -960,6 +1009,7 @@
     const state = {
       examType: "preliminary",
       edition: "all",        // "all" 表示全部屆數
+      activity: "exam",      // "exam" 作答測驗 / "study" 背題模式
       mode: "all",
       shuffle: true,
       timeLimitSec: 0,
@@ -977,8 +1027,10 @@
     // ---------- DOM ----------
     const welcomeSection = $("welcomeSection");
     const quizSection = $("quizSection");
+    const studySection = $("studySection");
     const resultSection = $("resultSection");
     const questionContainer = $("questionContainer");
+    const studyContainer = $("studyContainer");
     const analysisContainer = $("analysisContainer");
 
     // ============================================================
@@ -1015,6 +1067,7 @@
     }
     bindSeg("modeSeg", (v) => { state.mode = v; });
     bindSeg("shuffleSeg", (v) => { state.shuffle = v === "1"; });
+    bindSeg("activitySeg", (v) => { state.activity = v; });
 
     // 依目前賽段填入屆數下拉選單
     function populateEditions() {
@@ -1519,7 +1572,10 @@
     // ============================================================
     // 按鈕事件
     // ============================================================
-    $("startBtn").addEventListener("click", () => startQuiz(false));
+    $("startBtn").addEventListener("click", () => {
+      if (state.activity === "study") startStudy();
+      else startQuiz(false);
+    });
 
     // 題目導航面板開合
     $("navToggle").addEventListener("click", () => {
@@ -1574,6 +1630,7 @@
     function goHome() {
       stopTimer();
       quizSection.classList.add("hidden");
+      studySection.classList.add("hidden");
       resultSection.classList.add("hidden");
       welcomeSection.classList.remove("hidden");
       refreshCounts();
@@ -1581,6 +1638,157 @@
       tryRestoreProgress();
       window.scrollTo({ top: 0 });
     }
+
+    // ============================================================
+    // 背題 / 閃卡學習模式（瀏覽題庫並逐題揭曉答案，不計分）
+    // ============================================================
+    function startStudy() {
+      const list = collectQuestions();
+      if (list.length === 0) { alert("此模式目前沒有題目，請改選其他模式或試卷。"); return; }
+      state.questions = list;
+      state.showEdition = new Set(list.map((q) => q.edition)).size > 1;
+
+      welcomeSection.classList.add("hidden");
+      quizSection.classList.add("hidden");
+      resultSection.classList.add("hidden");
+      studySection.classList.remove("hidden");
+
+      const edLabel = state.edition && state.edition !== "all" ? ` · ${state.edition}` : "";
+      $("studyTitle").textContent = QUESTION_BANKS[state.examType].title + edLabel + "（背題模式）";
+      $("studyCount").textContent = list.length;
+      $("studyToggleAll").textContent = "全部顯示答案";
+      renderStudy();
+      window.scrollTo({ top: 0 });
+    }
+
+    function buildAnswerBlock(q) {
+      const box = document.createElement("div");
+      box.className = "analysis-box";
+      box.style.marginTop = "0.6rem";
+      let html = "";
+      if (q._isChoice) {
+        html += '<div style="margin-bottom:0.4rem;">';
+        q.options.forEach((opt, i) => {
+          const letter = String.fromCharCode(65 + i);
+          const isAns = i === q.answerIndex;
+          html += `<div class="study-opt${isAns ? " is-answer" : ""}">` +
+                  `<span class="opt-letter">${letter}</span><span>${escapeHtml(opt)}</span>` +
+                  `${isAns ? '<span class="badge correct" style="margin-left:auto;">正解</span>' : ""}</div>`;
+        });
+        html += "</div>";
+      } else {
+        html += `<p><strong>參考答案：</strong>${q.answer}</p>`;
+      }
+      html += `<p><strong>📌 知識點：</strong>${q.knowledge_points}</p>`;
+      html += `<p><strong>💡 解題思路：</strong>${q.solution_idea}</p>`;
+      box.innerHTML = html;
+      return box;
+    }
+
+    function renderStudy() {
+      studyContainer.innerHTML = "";
+      state.questions.forEach((q, idx) => {
+        const card = document.createElement("div");
+        card.className = "question-card";
+
+        const top = document.createElement("div");
+        top.className = "q-top";
+        const no = document.createElement("span");
+        no.className = "q-no";
+        no.textContent = idx + 1;
+        const qText = document.createElement("div");
+        qText.className = "q-text";
+        qText.innerHTML = `${cleanQuestion(q.question)} ${tagsHtml(q)}`;
+        top.appendChild(no);
+        top.appendChild(qText);
+        top.appendChild(makeStarButton(q));
+        card.appendChild(top);
+
+        const answer = buildAnswerBlock(q);
+        answer.classList.add("hidden");
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "reveal-btn";
+        btn.textContent = "顯示答案 ▾";
+        btn.addEventListener("click", () => {
+          const show = answer.classList.toggle("hidden") === false;
+          btn.textContent = show ? "隱藏答案 ▴" : "顯示答案 ▾";
+        });
+        card.appendChild(btn);
+        card.appendChild(answer);
+
+        studyContainer.appendChild(card);
+      });
+    }
+
+    // 全部展開 / 收合答案
+    $("studyToggleAll").addEventListener("click", () => {
+      const blocks = studyContainer.querySelectorAll(".analysis-box");
+      const btns = studyContainer.querySelectorAll(".reveal-btn");
+      const anyHidden = [...blocks].some((b) => b.classList.contains("hidden"));
+      blocks.forEach((b) => b.classList.toggle("hidden", !anyHidden));
+      btns.forEach((b) => b.textContent = anyHidden ? "隱藏答案 ▴" : "顯示答案 ▾");
+      $("studyToggleAll").textContent = anyHidden ? "全部隱藏答案" : "全部顯示答案";
+    });
+    $("studyExitBtn").addEventListener("click", goHome);
+    $("studyBackBtn").addEventListener("click", goHome);
+
+    // ============================================================
+    // 匯出 / 分享成績
+    // ============================================================
+    function buildReportText() {
+      let correct = 0, totalChoice = 0, textCount = 0;
+      const wrongLines = [];
+      state.questions.forEach((q, idx) => {
+        if (q._isChoice) {
+          totalChoice++;
+          const ok = state.answers[q._id] === q.answerIndex;
+          if (ok) correct++;
+          else {
+            const ua = state.answers[q._id];
+            const uaTxt = (ua === undefined || ua === null) ? "未作答" : q.options[ua];
+            wrongLines.push(`  ${idx + 1}. ${cleanQuestion(q.question).replace(/<[^>]+>/g, "").slice(0, 40)}\n     你的答案：${uaTxt}｜正解：${q.options[q.answerIndex]}`);
+          }
+        } else { textCount++; }
+      });
+      const pct = totalChoice ? Math.round((correct / totalChoice) * 100) : 0;
+      const bank = QUESTION_BANKS[state.examType].title;
+      const ed = state.edition === "all" ? "全部屆數" : state.edition;
+      const lines = [
+        "全澳中學生 Python 解難大賽 — 模擬測試成績",
+        "----------------------------------------",
+        `試卷：${bank}（${ed}）`,
+        `選擇題得分：${totalChoice ? pct + "%" : "—"}（答對 ${correct} / ${totalChoice}）`,
+        `程式 / 簡答題：${textCount} 題`,
+        `用時：${fmtTime(state.elapsed)}`,
+        `日期：${fmtDate(Date.now())}`
+      ];
+      if (wrongLines.length) {
+        lines.push("", "錯題清單：", ...wrongLines);
+      }
+      return lines.join("\n");
+    }
+
+    $("exportBtn").addEventListener("click", async () => {
+      const text = buildReportText();
+      // 優先使用系統分享，其次複製到剪貼簿，最後下載 txt
+      try {
+        if (navigator.share) { await navigator.share({ title: "我的模擬測試成績", text }); return; }
+      } catch { /* 使用者取消分享則往下走 */ }
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(text);
+          alert("成績已複製到剪貼簿！");
+          return;
+        }
+      } catch { /* 改用下載 */ }
+      const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `python模擬測試成績_${Date.now()}.txt`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
 
     // ============================================================
     // 學習報告（歷史記錄 + 統計 + 趨勢圖）
