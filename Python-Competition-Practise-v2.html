@@ -441,6 +441,136 @@
     /* 屆數標籤 */
     .tag.edition { background: var(--primary-soft); color: var(--primary); border-color: var(--primary); }
 
+    /* ---------- 小按鈕 / 排版 ---------- */
+    .btn-sm { padding: 0.35rem 0.7rem; font-size: 0.82rem; }
+    .row-between { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin-bottom: 0.9rem; }
+
+    /* ---------- 學習報告 ---------- */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+      gap: 0.7rem;
+      margin-bottom: 1rem;
+    }
+    .kpi {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.7rem 0.6rem;
+      text-align: center;
+    }
+    .kpi .n { font-size: 1.35rem; font-weight: 800; color: var(--primary); }
+    .kpi .l { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.1rem; }
+    .chart-wrap { margin-bottom: 1rem; }
+    .chart-title { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem; }
+    .bar-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 0.4rem;
+      height: 110px;
+      padding: 0.4rem 0.2rem 0;
+      border-bottom: 2px solid var(--border);
+    }
+    .bar-chart .bar {
+      flex: 1 1 0;
+      min-width: 10px;
+      background: linear-gradient(180deg, var(--primary), var(--primary-hover));
+      border-radius: 4px 4px 0 0;
+      position: relative;
+      transition: height 0.4s ease;
+      cursor: default;
+    }
+    .bar-chart .bar span {
+      position: absolute;
+      top: -1.1rem; left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .history-list { display: flex; flex-direction: column; gap: 0.45rem; }
+    .history-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.6rem;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.5rem 0.75rem;
+      font-size: 0.88rem;
+    }
+    .history-item .meta { color: var(--text-muted); font-size: 0.8rem; }
+    .history-item .pill {
+      font-weight: 700;
+      padding: 0.15rem 0.6rem;
+      border-radius: 99px;
+      background: var(--primary-soft);
+      color: var(--primary);
+    }
+    .history-item .pill.low { background: var(--danger-soft); color: var(--danger); }
+    .history-item .pill.mid { background: var(--surface); color: var(--warning); border: 1px solid var(--warning); }
+
+    /* ---------- 題目導航面板 ---------- */
+    .nav-palette {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(38px, 1fr));
+      gap: 0.4rem;
+      margin-top: 0.8rem;
+      padding-top: 0.8rem;
+      border-top: 1px solid var(--border);
+      max-height: 220px;
+      overflow-y: auto;
+    }
+    .nav-cell {
+      aspect-ratio: 1;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text-muted);
+      border-radius: 7px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: grid; place-items: center;
+      position: relative;
+      transition: transform 0.08s;
+    }
+    .nav-cell:hover { transform: scale(1.08); border-color: var(--primary); }
+    .nav-cell.answered { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .nav-cell.marked::after {
+      content: "";
+      position: absolute; top: 2px; right: 2px;
+      width: 7px; height: 7px;
+      background: var(--warning);
+      border-radius: 50%;
+    }
+    .nav-legend { display: flex; flex-wrap: wrap; gap: 0.8rem; font-size: 0.78rem; color: var(--text-muted); margin-top: 0.6rem; }
+    .nav-legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 0.25rem; }
+    .nav-legend .lg-ans { background: var(--primary); }
+    .nav-legend .lg-un { background: var(--surface-2); border: 1px solid var(--border); }
+    .nav-legend .lg-mk { background: var(--warning); border-radius: 50%; }
+
+    /* ---------- 標記本題 ---------- */
+    .flag-btn {
+      flex: 0 0 auto;
+      background: none; border: none; cursor: pointer;
+      font-size: 1.1rem; line-height: 1;
+      filter: grayscale(1) opacity(0.5);
+      transition: transform 0.12s, filter 0.2s;
+    }
+    .flag-btn:hover { transform: scale(1.2); }
+    .flag-btn.on { filter: none; }
+
+    /* ---------- 知識點分析 ---------- */
+    .kp-row { margin-bottom: 0.8rem; }
+    .kp-row .kp-head { display: flex; justify-content: space-between; gap: 0.6rem; font-size: 0.9rem; margin-bottom: 0.3rem; }
+    .kp-row .kp-head .pct { font-weight: 700; }
+    .kp-bar { height: 9px; background: var(--surface-2); border-radius: 99px; overflow: hidden; }
+    .kp-bar > i { display: block; height: 100%; border-radius: 99px; }
+    .kp-bar > i.good { background: var(--success); }
+    .kp-bar > i.mid { background: var(--warning); }
+    .kp-bar > i.bad { background: var(--danger); }
+
     .hidden { display: none !important; }
 
     footer {
@@ -528,6 +658,20 @@
         <button id="startBtn" class="btn btn-primary btn-lg btn-block">開始作答 →</button>
       </div>
 
+      <!-- 學習報告（有作答記錄時才顯示，由 JS 渲染） -->
+      <div class="card hidden" id="dashboardCard">
+        <div class="row-between">
+          <h3 style="margin:0;">📊 我的學習報告</h3>
+          <button id="clearHistoryBtn" class="btn btn-ghost btn-sm">清除記錄</button>
+        </div>
+        <div class="kpi-grid" id="kpiGrid"></div>
+        <div class="chart-wrap">
+          <div class="chart-title">最近成績趨勢（選擇題得分 %）</div>
+          <div class="bar-chart" id="scoreChart"></div>
+        </div>
+        <div class="history-list" id="historyList"></div>
+      </div>
+
       <div class="card">
         <h3>📚 資料來源與官方連結</h3>
         <p class="lead" style="margin-bottom:0.7rem;">本題庫整理自澳門生產力暨科技轉移中心（CPTTM）「全澳中學生 Python 解難大賽」歷屆真題。官方未公開全部試卷，最新賽情與報名請以官網為準。</p>
@@ -548,10 +692,13 @@
           <span class="quiz-title" id="examTitle"></span>
           <div class="stats">
             <span>已答 <b id="answeredCount">0</b> / <b id="totalCount">0</b></span>
+            <span id="markWrap" class="hidden">標記 <b id="markedCount">0</b></span>
             <span id="timeWrap">時間 <b id="timeDisplay">00:00</b></span>
+            <button id="navToggle" class="btn btn-ghost btn-sm" type="button">題目導航 ▾</button>
           </div>
         </div>
         <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="nav-palette hidden" id="navPalette"></div>
       </div>
 
       <div id="questionContainer"></div>
@@ -583,6 +730,12 @@
           <button id="restartBtn" class="btn btn-ghost">重新作答本卷</button>
           <button id="backHomeBtn" class="btn btn-ghost">返回首頁</button>
         </div>
+      </div>
+
+      <div class="card hidden" id="kpCard">
+        <h3>🎯 知識點掌握分析</h3>
+        <p class="lead" style="margin-bottom:0.8rem;">依選擇題作答情況統計各知識點的正確率，優先複習掌握較弱的主題。</p>
+        <div id="kpContainer"></div>
       </div>
 
       <div class="card">
@@ -738,8 +891,10 @@
       theme: "pcp_theme",
       bookmarks: "pcp_bookmarks",  // 收藏題目 ID 陣列
       wrong: "pcp_wrong",          // 錯題 ID 陣列
-      progress: "pcp_progress"     // 未完成的作答進度
+      progress: "pcp_progress",    // 未完成的作答進度
+      history: "pcp_history"       // 歷次完成記錄
     };
+    const HISTORY_MAX = 50;        // 最多保留的歷史記錄筆數
 
     // ---------- 工具函式 ----------
     const $ = (id) => document.getElementById(id);
@@ -810,6 +965,7 @@
       timeLimitSec: 0,
       questions: [],          // 本次作答題目（題庫物件的參照）
       answers: {},            // { _id: 選項index 或 文字 }
+      marked: new Set(),      // 本次「標記待複查」的題目 _id
       startTime: 0,
       elapsed: 0,
       timerInterval: null
@@ -933,6 +1089,7 @@
       if (!resume) {
         state.questions = collectQuestions();
         state.answers = {};
+        state.marked = new Set();
         state.elapsed = 0;
         if (state.questions.length === 0) {
           alert("此模式目前沒有題目，請改選其他模式或試卷。");
@@ -1016,6 +1173,21 @@
       return btn;
     }
 
+    // 「標記待複查」按鈕（僅本次作答有效，會反映在題目導航面板）
+    function makeFlagButton(q) {
+      const btn = document.createElement("button");
+      btn.className = "flag-btn" + (state.marked.has(q._id) ? " on" : "");
+      btn.title = "標記本題以便稍後複查";
+      btn.textContent = "🚩";
+      btn.addEventListener("click", () => {
+        if (state.marked.has(q._id)) { state.marked.delete(q._id); btn.classList.remove("on"); }
+        else { state.marked.add(q._id); btn.classList.add("on"); }
+        updateProgress();
+        persistProgress();
+      });
+      return btn;
+    }
+
     function renderQuestions() {
       questionContainer.innerHTML = "";
       state.questions.forEach((q, idx) => {
@@ -1034,6 +1206,7 @@
         qText.innerHTML = `${cleanQuestion(q.question)} ${tagsHtml(q)}`;
         top.appendChild(no);
         top.appendChild(qText);
+        top.appendChild(makeFlagButton(q));
         top.appendChild(makeStarButton(q));
         card.appendChild(top);
 
@@ -1087,6 +1260,35 @@
 
         questionContainer.appendChild(card);
       });
+      renderNavigator();
+    }
+
+    // ---------- 題目導航面板 ----------
+    function renderNavigator() {
+      const palette = $("navPalette");
+      palette.innerHTML = "";
+      state.questions.forEach((q, idx) => {
+        const cell = document.createElement("button");
+        cell.type = "button";
+        cell.className = "nav-cell";
+        if (isAnswered(q)) cell.classList.add("answered");
+        if (state.marked.has(q._id)) cell.classList.add("marked");
+        cell.textContent = idx + 1;
+        cell.title = `第 ${idx + 1} 題`;
+        cell.addEventListener("click", () => {
+          const target = $(`q-${idx}`);
+          if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+        palette.appendChild(cell);
+      });
+      // 圖例
+      const legend = document.createElement("div");
+      legend.className = "nav-legend";
+      legend.innerHTML =
+        '<span><i class="lg-ans"></i>已作答</span>' +
+        '<span><i class="lg-un"></i>未作答</span>' +
+        '<span><i class="lg-mk"></i>已標記</span>';
+      palette.appendChild(legend);
     }
 
     function isAnswered(q) {
@@ -1100,6 +1302,17 @@
       const total = state.questions.length;
       $("answeredCount").textContent = answered;
       $("progressFill").style.width = total ? `${(answered / total) * 100}%` : "0%";
+      // 標記數
+      $("markedCount").textContent = state.marked.size;
+      $("markWrap").classList.toggle("hidden", state.marked.size === 0);
+      // 同步題目導航面板狀態
+      const cells = $("navPalette").querySelectorAll(".nav-cell");
+      state.questions.forEach((q, idx) => {
+        const cell = cells[idx];
+        if (!cell) return;
+        cell.classList.toggle("answered", isAnswered(q));
+        cell.classList.toggle("marked", state.marked.has(q._id));
+      });
     }
 
     // ============================================================
@@ -1115,6 +1328,7 @@
         timeLimitSec: state.timeLimitSec,
         questionIds: state.questions.map((q) => q._id),
         answers: state.answers,
+        marked: [...state.marked],
         elapsed: state.elapsed
       });
     }
@@ -1134,6 +1348,7 @@
         state.timeLimitSec = p.timeLimitSec;
         state.questions = restored;
         state.answers = p.answers || {};
+        state.marked = new Set(p.marked || []);
         state.elapsed = p.elapsed || 0;
         startQuiz(true);
       };
@@ -1183,8 +1398,50 @@
       $("sumText").textContent = textCount;
       $("sumTime").textContent = fmtTime(state.elapsed);
 
+      // 記錄本次成績到歷史
+      recordHistory({
+        date: Date.now(),
+        title: QUESTION_BANKS[state.examType].title,
+        edition: state.edition === "all" ? "全部屆數" : state.edition,
+        mode: state.mode,
+        percent, correctCount, totalChoice, textCount,
+        elapsed: state.elapsed
+      });
+
+      renderKnowledgePoints();
       renderAnalysis();
       window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    // 依知識點統計選擇題正確率，找出較弱主題
+    function renderKnowledgePoints() {
+      const kpCard = $("kpCard");
+      const container = $("kpContainer");
+      const stats = {};
+      state.questions.forEach((q) => {
+        if (!q._isChoice) return;
+        const kp = (q.knowledge_points || "其他").trim();
+        if (!stats[kp]) stats[kp] = { total: 0, correct: 0 };
+        stats[kp].total++;
+        if (state.answers[q._id] === q.answerIndex) stats[kp].correct++;
+      });
+      const rows = Object.entries(stats)
+        .map(([kp, s]) => ({ kp, pct: Math.round((s.correct / s.total) * 100), ...s }))
+        .sort((a, b) => a.pct - b.pct); // 由弱到強
+
+      if (rows.length === 0) { kpCard.classList.add("hidden"); return; }
+      kpCard.classList.remove("hidden");
+      container.innerHTML = "";
+      rows.forEach((r) => {
+        const level = r.pct >= 80 ? "good" : r.pct >= 50 ? "mid" : "bad";
+        const row = document.createElement("div");
+        row.className = "kp-row";
+        row.innerHTML =
+          `<div class="kp-head"><span>${r.kp}</span>` +
+          `<span class="pct">${r.correct}/${r.total}（${r.pct}%）</span></div>` +
+          `<div class="kp-bar"><i class="${level}" style="width:${r.pct}%"></i></div>`;
+        container.appendChild(row);
+      });
     }
 
     function renderAnalysis() {
@@ -1264,9 +1521,20 @@
     // ============================================================
     $("startBtn").addEventListener("click", () => startQuiz(false));
 
+    // 題目導航面板開合
+    $("navToggle").addEventListener("click", () => {
+      const palette = $("navPalette");
+      const open = palette.classList.toggle("hidden") === false;
+      $("navToggle").textContent = open ? "題目導航 ▴" : "題目導航 ▾";
+    });
+
     $("submitBtn").addEventListener("click", () => {
       const unanswered = state.questions.filter((q) => !isAnswered(q)).length;
-      if (unanswered > 0 && !confirm(`尚有 ${unanswered} 題未作答，確定要提交嗎？`)) return;
+      const marked = state.marked.size;
+      let msg = "";
+      if (unanswered > 0) msg += `尚有 ${unanswered} 題未作答`;
+      if (marked > 0) msg += `${msg ? "、" : "尚有 "}${marked} 題已標記待複查`;
+      if (msg && !confirm(`${msg}，確定要提交嗎？`)) return;
       showResult();
     });
 
@@ -1282,6 +1550,7 @@
     $("restartBtn").addEventListener("click", () => {
       // 用相同題目重新作答
       state.answers = {};
+      state.marked = new Set();
       state.elapsed = 0;
       startQuiz(true);
     });
@@ -1291,8 +1560,15 @@
       if (wrongQs.length === 0) { alert("本卷沒有答錯的選擇題，太棒了！🎉"); return; }
       state.questions = wrongQs.slice();
       state.answers = {};
+      state.marked = new Set();
       state.elapsed = 0;
       startQuiz(true);
+    });
+
+    $("clearHistoryBtn").addEventListener("click", () => {
+      if (!confirm("確定要清除所有作答記錄嗎？此操作無法復原。")) return;
+      remove(LS.history);
+      renderDashboard();
     });
 
     function goHome() {
@@ -1301,8 +1577,93 @@
       resultSection.classList.add("hidden");
       welcomeSection.classList.remove("hidden");
       refreshCounts();
+      renderDashboard();
       tryRestoreProgress();
       window.scrollTo({ top: 0 });
+    }
+
+    // ============================================================
+    // 學習報告（歷史記錄 + 統計 + 趨勢圖）
+    // ============================================================
+    function recordHistory(entry) {
+      const hist = load(LS.history, []);
+      hist.push(entry);
+      // 僅保留最近 HISTORY_MAX 筆
+      while (hist.length > HISTORY_MAX) hist.shift();
+      save(LS.history, hist);
+    }
+
+    function fmtDate(ts) {
+      const d = new Date(ts);
+      const p = (n) => n.toString().padStart(2, "0");
+      return `${d.getFullYear()}/${p(d.getMonth() + 1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+    }
+
+    // 連續作答天數（以本地日期計算）
+    function calcStreak(hist) {
+      const days = new Set(hist.map((h) => {
+        const d = new Date(h.date);
+        return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+      }));
+      let streak = 0;
+      const cur = new Date();
+      // 若今天沒作答，仍可從昨天起算連續天數
+      for (let i = 0; i < 3650; i++) {
+        const key = `${cur.getFullYear()}-${cur.getMonth()}-${cur.getDate()}`;
+        if (days.has(key)) { streak++; cur.setDate(cur.getDate() - 1); }
+        else if (i === 0) { cur.setDate(cur.getDate() - 1); } // 容許今天尚未作答
+        else break;
+      }
+      return streak;
+    }
+
+    function renderDashboard() {
+      const hist = load(LS.history, []);
+      const card = $("dashboardCard");
+      if (hist.length === 0) { card.classList.add("hidden"); return; }
+      card.classList.remove("hidden");
+
+      // 只統計含選擇題的記錄（純簡答練習沒有得分）
+      const scored = hist.filter((h) => h.totalChoice > 0);
+      const avg = scored.length ? Math.round(scored.reduce((s, h) => s + h.percent, 0) / scored.length) : 0;
+      const best = scored.length ? Math.max(...scored.map((h) => h.percent)) : 0;
+      const totalSec = hist.reduce((s, h) => s + (h.elapsed || 0), 0);
+      const totalMin = Math.round(totalSec / 60);
+
+      $("kpiGrid").innerHTML = [
+        ["作答次數", hist.length],
+        ["平均得分", scored.length ? avg + "%" : "—"],
+        ["最佳得分", scored.length ? best + "%" : "—"],
+        ["累計時間", totalMin + " 分"],
+        ["連續天數", calcStreak(hist) + " 天"]
+      ].map(([l, n]) => `<div class="kpi"><div class="n">${n}</div><div class="l">${l}</div></div>`).join("");
+
+      // 趨勢圖：最近 12 筆有得分的記錄
+      const recent = scored.slice(-12);
+      const chart = $("scoreChart");
+      if (recent.length === 0) {
+        chart.innerHTML = '<div class="empty" style="padding:1rem;">尚無含選擇題的記錄</div>';
+      } else {
+        chart.innerHTML = recent.map((h) => {
+          const ht = Math.max(4, h.percent);
+          return `<div class="bar" style="height:${ht}%" title="${fmtDate(h.date)}：${h.percent}%"><span>${h.percent}</span></div>`;
+        }).join("");
+      }
+
+      // 最近記錄清單（最新在上，最多 8 筆）
+      const list = $("historyList");
+      const modeLabel = { all: "全部", choice: "選擇題", text: "程式/簡答", wrong: "錯題重練", bookmark: "我的收藏" };
+      list.innerHTML = hist.slice().reverse().slice(0, 8).map((h) => {
+        const cls = h.totalChoice === 0 ? "" : h.percent >= 80 ? "" : h.percent >= 50 ? " mid" : " low";
+        const score = h.totalChoice === 0 ? "—" : h.percent + "%";
+        return `<div class="history-item">
+          <div>
+            <div>${h.title}${h.edition && h.edition !== "全部屆數" ? " · " + h.edition : ""}<span class="meta">（${modeLabel[h.mode] || h.mode}）</span></div>
+            <div class="meta">${fmtDate(h.date)} · 用時 ${fmtTime(h.elapsed || 0)}${h.totalChoice ? " · 答對 " + h.correctCount + "/" + h.totalChoice : ""}</div>
+          </div>
+          <span class="pill${cls}">${score}</span>
+        </div>`;
+      }).join("");
     }
 
     // ============================================================
@@ -1319,7 +1680,8 @@
       if (!quizSection.classList.contains("hidden")) persistProgress();
     });
 
-    // 啟動：檢查是否有未完成進度
+    // 啟動：渲染學習報告並檢查是否有未完成進度
+    renderDashboard();
     tryRestoreProgress();
   </script>
 </body>
