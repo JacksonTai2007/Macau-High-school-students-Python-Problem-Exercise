@@ -694,6 +694,25 @@
       padding: 0.1rem 0.5rem; color: var(--text); white-space: nowrap;
     }
 
+    /* ---------- 即時對答案（每題作答後立即揭曉） ---------- */
+    .options.locked .option { pointer-events: none; opacity: 0.92; }
+    .option.reveal-correct { border-color: var(--success); background: var(--success-soft); }
+    .option.reveal-wrong { border-color: var(--danger); background: var(--danger-soft); }
+    .inline-analysis { margin-top: 0.7rem; animation: fadeIn 0.25s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+    /* ---------- 錯題筆記 ---------- */
+    .note-block { margin-top: 0.7rem; }
+    .note-toggle {
+      background: none; border: 1px dashed var(--border); border-radius: var(--radius-sm);
+      color: var(--text-muted); font-size: 0.85rem; cursor: pointer;
+      padding: 0.35rem 0.7rem; transition: color 0.15s, border-color 0.15s;
+    }
+    .note-toggle:hover { color: var(--primary); border-color: var(--primary); }
+    .note-toggle.has-note { color: var(--warning); border-style: solid; }
+    .note-block textarea { min-height: 72px; margin-top: 0.45rem; }
+    .note-state { font-size: 0.78rem; color: var(--text-muted); margin-left: 0.5rem; }
+
     /* ============================================================
        手機端適配
        ============================================================ */
@@ -762,6 +781,7 @@
   <div class="topbar">
     <div class="topbar-inner">
       <div class="brand"><span class="logo">🐍</span><span>Python 解難大賽 · 模擬測試</span></div>
+      <button id="fontBtn" class="icon-btn" title="切換字體大小" aria-label="切換字體大小">A</button>
       <button id="helpBtn" class="icon-btn" title="鍵盤快捷鍵" aria-label="鍵盤快捷鍵說明">⌨</button>
       <button id="themeBtn" class="icon-btn" title="切換深 / 淺色主題" aria-label="切換主題">🌙</button>
     </div>
@@ -817,6 +837,31 @@
         </div>
 
         <div class="field">
+          <label>對答案方式</label>
+          <div class="seg" id="instantSeg">
+            <label class="opt active"><input type="radio" name="instant" value="0" checked>交卷後統一對答案<span class="sub">模擬正式考試</span></label>
+            <label class="opt"><input type="radio" name="instant" value="1">每題即時對答案<span class="sub">答完立即看解析</span></label>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="kpSelect">知識點專練</label>
+          <select id="kpSelect">
+            <!-- 依所選賽段 / 屆數動態填入知識點 -->
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="countSelect">抽題數量</label>
+          <select id="countSelect">
+            <option value="0">全部題目</option>
+            <option value="10">隨機 10 題</option>
+            <option value="20">隨機 20 題</option>
+            <option value="30">隨機 30 題</option>
+          </select>
+        </div>
+
+        <div class="field">
           <label for="timeLimitSelect">作答時限</label>
           <select id="timeLimitSelect">
             <option value="0">不限時</option>
@@ -864,6 +909,18 @@
           <div class="bar-chart" id="scoreChart"></div>
         </div>
         <div class="history-list" id="historyList"></div>
+      </div>
+
+      <!-- 資料備份 / 還原 -->
+      <div class="card">
+        <h3>💾 資料管理</h3>
+        <p class="lead" style="margin-bottom:0.7rem;">所有記錄（錯題本、收藏、筆記、歷史成績、打卡）都儲存在本機瀏覽器。換裝置或清理瀏覽器前，建議先匯出備份。</p>
+        <div class="btn-row">
+          <button id="backupBtn" class="btn btn-ghost">匯出備份</button>
+          <button id="restoreBtn" class="btn btn-ghost">匯入備份</button>
+          <button id="wipeBtn" class="btn btn-ghost" style="color:var(--danger);">清除所有資料</button>
+          <input type="file" id="restoreFile" accept="application/json,.json" class="hidden" aria-hidden="true">
+        </div>
       </div>
 
       <div class="card">
@@ -1124,7 +1181,9 @@
       wrong: "pcp_wrong",          // 錯題 ID 陣列
       progress: "pcp_progress",    // 未完成的作答進度
       history: "pcp_history",      // 歷次完成記錄
-      checkin: "pcp_checkin"       // 每日打卡日期（YYYY-M-D 陣列）
+      checkin: "pcp_checkin",      // 每日打卡日期（YYYY-M-D 陣列）
+      notes: "pcp_notes",          // 題目筆記 { _id: 文字 }
+      font: "pcp_font"             // 字體大小檔位
     };
     const HISTORY_MAX = 50;        // 最多保留的歷史記錄筆數
 
@@ -1195,6 +1254,9 @@
       activity: "exam",      // "exam" 作答測驗 / "study" 背題模式
       mode: "all",
       shuffle: true,
+      instant: false,        // 每題即時對答案（選完立即揭曉 + 解析）
+      kp: "all",             // 知識點專練（"all" 表示不限）
+      qCount: 0,             // 抽題數量（0 表示全部）
       timeLimitSec: 0,
       questions: [],          // 本次作答題目（題庫物件的參照）
       answers: {},            // { _id: 選項index 或 文字 }
@@ -1208,6 +1270,7 @@
 
     let bookmarks = new Set(load(LS.bookmarks, []));
     let wrongSet = new Set(load(LS.wrong, []));
+    let notes = load(LS.notes, {});      // { _id: 筆記文字 }
 
     // ---------- DOM ----------
     const welcomeSection = $("welcomeSection");
@@ -1253,6 +1316,29 @@
     bindSeg("modeSeg", (v) => { state.mode = v; });
     bindSeg("shuffleSeg", (v) => { state.shuffle = v === "1"; });
     bindSeg("activitySeg", (v) => { state.activity = v; });
+    bindSeg("instantSeg", (v) => { state.instant = v === "1"; });
+
+    // 將「字串操作、索引」之類的知識點欄位拆成單一知識點
+    function kpTokens(q) {
+      return (q.knowledge_points || "").split(/[、,，;；/]/).map((t) => t.trim()).filter(Boolean);
+    }
+
+    // 依目前賽段 + 屆數填入知識點下拉選單（按出現次數排序）
+    function populateKps() {
+      const sel = $("kpSelect");
+      let base = QUESTION_BANKS[state.examType].questions;
+      if (state.edition && state.edition !== "all") base = base.filter((q) => q.edition === state.edition);
+      const counts = {};
+      base.forEach((q) => kpTokens(q).forEach((t) => { counts[t] = (counts[t] || 0) + 1; }));
+      const opts = ['<option value="all">全部知識點</option>'].concat(
+        Object.entries(counts)
+          .sort((a, b) => b[1] - a[1])
+          .map(([kp, n]) => `<option value="${kp}">${kp}（${n} 題）</option>`)
+      );
+      sel.innerHTML = opts.join("");
+      state.kp = "all";
+      sel.value = "all";
+    }
 
     // 依目前賽段填入屆數下拉選單
     function populateEditions() {
@@ -1266,12 +1352,19 @@
       sel.value = "all";
     }
     populateEditions();
+    populateKps();
 
     $("examTypeSelect").addEventListener("change", (e) => {
       state.examType = e.target.value;
       populateEditions();   // 切換賽段時重新載入可用屆數
+      populateKps();        // 知識點清單也隨之更新
     });
-    $("editionSelect").addEventListener("change", (e) => { state.edition = e.target.value; });
+    $("editionSelect").addEventListener("change", (e) => {
+      state.edition = e.target.value;
+      populateKps();
+    });
+    $("kpSelect").addEventListener("change", (e) => { state.kp = e.target.value; });
+    $("countSelect").addEventListener("change", (e) => { state.qCount = parseInt(e.target.value, 10); });
     $("timeLimitSelect").addEventListener("change", (e) => {
       state.timeLimitSec = parseInt(e.target.value, 10) * 60;
     });
@@ -1291,6 +1384,10 @@
       let base = bank.questions;
       if (state.edition && state.edition !== "all") {
         base = base.filter((q) => q.edition === state.edition);
+      }
+      // 知識點專練：只留下含指定知識點的題目
+      if (state.kp && state.kp !== "all") {
+        base = base.filter((q) => kpTokens(q).includes(state.kp));
       }
       let pool;
       switch (state.mode) {
@@ -1316,6 +1413,15 @@
         const choices = shuffle(pool.filter((q) => q._isChoice));
         const texts = shuffle(pool.filter((q) => !q._isChoice));
         pool = [...choices, ...texts];
+      }
+      // 抽題數量：隨機抽 N 題（不打亂時抽完仍維持原順序）
+      if (state.qCount > 0 && pool.length > state.qCount) {
+        if (state.shuffle) {
+          pool = pool.slice(0, state.qCount);
+        } else {
+          const idxs = shuffle([...pool.keys()]).slice(0, state.qCount).sort((a, b) => a - b);
+          pool = idxs.map((i) => pool[i]);
+        }
       }
       return pool;
     }
@@ -1429,6 +1535,44 @@
       return btn;
     }
 
+    // 題目筆記：解析頁與背題模式可為每題寫下心得，存於本機
+    function makeNoteBlock(q) {
+      const wrap = document.createElement("div");
+      wrap.className = "note-block";
+
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "note-toggle" + (notes[q._id] ? " has-note" : "");
+      btn.textContent = notes[q._id] ? "📝 查看 / 編輯筆記" : "📝 寫筆記";
+      wrap.appendChild(btn);
+
+      const stateTag = document.createElement("span");
+      stateTag.className = "note-state";
+      wrap.appendChild(stateTag);
+
+      let ta = null;
+      btn.addEventListener("click", () => {
+        if (ta) { // 再次點擊＝收合
+          ta.remove(); ta = null; stateTag.textContent = "";
+          return;
+        }
+        ta = document.createElement("textarea");
+        ta.placeholder = "寫下解題心得、易錯點……（自動儲存）";
+        ta.value = notes[q._id] || "";
+        ta.addEventListener("input", () => {
+          const v = ta.value.trim();
+          if (v) notes[q._id] = v; else delete notes[q._id];
+          save(LS.notes, notes);
+          btn.classList.toggle("has-note", !!v);
+          btn.textContent = v ? "📝 查看 / 編輯筆記" : "📝 寫筆記";
+          stateTag.textContent = "已儲存 ✓";
+        });
+        wrap.appendChild(ta);
+        ta.focus();
+      });
+      return wrap;
+    }
+
     function renderQuestions() {
       questionContainer.innerHTML = "";
       state.questions.forEach((q, idx) => {
@@ -1455,6 +1599,27 @@
         if (q._isChoice) {
           const opts = document.createElement("div");
           opts.className = "options";
+
+          // 即時對答案：選定後鎖題、標示對錯並顯示解析
+          const reveal = () => {
+            opts.classList.add("locked");
+            const labels = opts.querySelectorAll(".option");
+            labels.forEach((l, i) => {
+              l.querySelector("input").disabled = true;
+              if (i === q.answerIndex) l.classList.add("reveal-correct");
+              else if (i === state.answers[q._id]) l.classList.add("reveal-wrong");
+            });
+            card.classList.add(state.answers[q._id] === q.answerIndex ? "is-correct" : "is-wrong");
+            if (!card.querySelector(".inline-analysis")) {
+              const box = document.createElement("div");
+              box.className = "analysis-box inline-analysis";
+              box.innerHTML =
+                `<p><strong>📌 知識點：</strong>${q.knowledge_points}</p>` +
+                `<p><strong>💡 解題思路：</strong>${q.solution_idea}</p>`;
+              card.appendChild(box);
+            }
+          };
+
           q.options.forEach((opt, optIdx) => {
             const id = `${q._id}__${optIdx}`;
             const label = document.createElement("label");
@@ -1473,6 +1638,7 @@
               label.classList.add("selected");
               updateProgress();
               persistProgress();
+              if (state.instant) reveal();
             });
 
             const letter = document.createElement("span");
@@ -1487,6 +1653,8 @@
             opts.appendChild(label);
           });
           card.appendChild(opts);
+          // 還原進度時，已作答的題目維持揭曉狀態
+          if (state.instant && state.answers[q._id] !== undefined) reveal();
         } else {
           const ta = document.createElement("textarea");
           ta.placeholder = "請在此輸入答案……";
@@ -1497,6 +1665,27 @@
           });
           ta.addEventListener("blur", persistProgress);
           card.appendChild(ta);
+
+          // 即時對答案模式下，程式 / 簡答題提供「查看參考答案」
+          if (state.instant) {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "note-toggle";
+            btn.style.marginTop = "0.6rem";
+            btn.textContent = "👁 查看參考答案";
+            btn.addEventListener("click", () => {
+              if (card.querySelector(".inline-analysis")) return;
+              const box = document.createElement("div");
+              box.className = "analysis-box inline-analysis";
+              box.innerHTML =
+                `<p><strong>✅ 參考答案：</strong>${q.answer}</p>` +
+                `<p><strong>📌 知識點：</strong>${q.knowledge_points}</p>` +
+                `<p><strong>💡 解題思路：</strong>${q.solution_idea}</p>`;
+              card.appendChild(box);
+              btn.remove();
+            });
+            card.appendChild(btn);
+          }
         }
 
         questionContainer.appendChild(card);
@@ -1566,6 +1755,7 @@
         edition: state.edition,
         mode: state.mode,
         shuffle: state.shuffle,
+        instant: state.instant,
         timeLimitSec: state.timeLimitSec,
         questionIds: state.questions.map((q) => q._id),
         answers: state.answers,
@@ -1586,6 +1776,7 @@
         state.edition = p.edition || "all";
         state.mode = p.mode;
         state.shuffle = p.shuffle;
+        state.instant = !!p.instant;
         state.timeLimitSec = p.timeLimitSec;
         state.questions = restored;
         state.answers = p.answers || {};
@@ -1749,6 +1940,7 @@
           `<p><strong>📌 知識點：</strong>${q.knowledge_points}</p>` +
           `<p><strong>💡 解題思路：</strong>${q.solution_idea}</p>`;
         card.appendChild(box);
+        card.appendChild(makeNoteBlock(q));
 
         analysisContainer.appendChild(card);
       });
@@ -2050,6 +2242,7 @@
         });
         card.appendChild(btn);
         card.appendChild(answer);
+        card.appendChild(makeNoteBlock(q));
 
         studyContainer.appendChild(card);
       });
@@ -2135,6 +2328,72 @@
 
     // 列印 / 存為 PDF（透過瀏覽器列印對話框，可選「另存為 PDF」）
     $("printBtn").addEventListener("click", () => window.print());
+
+    // ============================================================
+    // 字體大小（標準 → 大 → 特大 循環）
+    // ============================================================
+    const FONT_STEPS = [
+      { label: "標準", size: "" },
+      { label: "大", size: "17.5px" },
+      { label: "特大", size: "19px" }
+    ];
+    function applyFont(step) {
+      const f = FONT_STEPS[step] || FONT_STEPS[0];
+      document.documentElement.style.fontSize = f.size;
+      $("fontBtn").title = `字體大小：${f.label}（點擊切換）`;
+      save(LS.font, step);
+    }
+    applyFont(load(LS.font, 0));
+    $("fontBtn").addEventListener("click", () => {
+      applyFont((load(LS.font, 0) + 1) % FONT_STEPS.length);
+    });
+
+    // ============================================================
+    // 資料備份 / 還原 / 清除（涵蓋所有本機記錄）
+    // ============================================================
+    $("backupBtn").addEventListener("click", () => {
+      const data = { _app: "pcp-backup", _version: 1, _date: new Date().toISOString() };
+      Object.values(LS).forEach((key) => {
+        const v = localStorage.getItem(key);
+        if (v !== null) data[key] = JSON.parse(v);
+      });
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `python模擬測試備份_${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+
+    $("restoreBtn").addEventListener("click", () => $("restoreFile").click());
+    $("restoreFile").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      e.target.value = ""; // 允許重複選同一檔案
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          if (data._app !== "pcp-backup") throw new Error("格式不符");
+          if (!confirm("匯入備份會覆蓋目前的本機記錄（錯題本、收藏、筆記、歷史成績、打卡）。確定繼續嗎？")) return;
+          Object.values(LS).forEach((key) => {
+            if (key in data) save(key, data[key]);
+          });
+          alert("匯入成功！頁面將重新整理以套用資料。");
+          location.reload();
+        } catch {
+          alert("匯入失敗：檔案不是本系統匯出的備份。");
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    $("wipeBtn").addEventListener("click", () => {
+      if (!confirm("確定要清除所有本機資料嗎？包含錯題本、收藏、筆記、歷史成績與打卡記錄，且無法復原。")) return;
+      Object.values(LS).forEach(remove);
+      alert("已清除，頁面將重新整理。");
+      location.reload();
+    });
 
     // ============================================================
     // PWA：動態注入 Web App Manifest（可「加到主畫面」，載入後即可離線使用）
